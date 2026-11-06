@@ -32,7 +32,8 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
     return states.get(uid);
   };
   const persist=async(uid,next)=>{states.set(uid,next);const f=path.join(savesDir,uid+'.json');await writeFile(f+'.tmp',JSON.stringify(next),'utf8');await rename(f+'.tmp',f)};
-  const publicState=state=>{const ev=eventForYear(state);return{state,aiConfigured:!!env.DEEPSEEK_API_KEY,authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
+  const aiEnvFor=uid=>{const cfg=(uid&&uid!=='local'&&users[uid]?.aiConfig)||{};return{DEEPSEEK_API_KEY:cfg.apiKey||env.DEEPSEEK_API_KEY,DEEPSEEK_MODEL:cfg.model||env.DEEPSEEK_MODEL,DEEPSEEK_BASE_URL:cfg.baseUrl||env.DEEPSEEK_BASE_URL,_own:!!(uid&&uid!=='local'&&cfg.apiKey)}};
+  const publicState=(state,aiEnv=env)=>{const ev=eventForYear(state);return{state,aiConfigured:!!(aiEnv&&aiEnv.DEEPSEEK_API_KEY),aiModel:(aiEnv&&aiEnv.DEEPSEEK_MODEL)||null,hasOwnAi:!!(aiEnv&&aiEnv._own),authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
   const readJson=async req=>{
     if(!req.headers['content-type']?.startsWith('application/json'))fail('需要 JSON 请求。',415);
     let raw='';for await(const part of req){raw+=part;if(Buffer.byteLength(raw)>16384)fail('请求过长。',413)}
@@ -48,6 +49,7 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
       }
       const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim();
       const uid=requireAuth?sessions.get(token):'local';
+      const aiEnv=aiEnvFor(uid);
 
       if(req.method==='GET'&&route!=='/api/game'){
         const rel=route==='/'?'index.html':route.slice(1);
@@ -65,7 +67,7 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
 
       if(req.method==='GET'&&route==='/api/game'){
         if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
-        return send(200,publicState(await loadState(uid)));
+        return send(200,publicState(await loadState(uid),aiEnv));
       }
 
       if(req.method==='POST'&&(route==='/api/signup'||route==='/api/login')){
@@ -77,7 +79,7 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
         let user=Object.values(users).find(u=>u.username===username);
         if(route==='/api/signup'){
           if(user)fail('该用户名已被注册。',409);
-          user={id:randomUUID(),username,...hashPw(password)};
+          user={id:randomUUID(),username,...hashPw(password),aiConfig:{}};
           users[user.id]=user;
           await saveUsers();
         }else{
@@ -85,7 +87,14 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
         }
         const t=randomBytes(24).toString('hex');
         sessions.set(t,user.id);await saveSessions();
-        return send(200,{token:t,...publicState(await loadState(user.id))});
+        return send(200,{token:t,...publicState(await loadState(user.id),aiEnvFor(user.id))});
+      }
+
+      if(req.method==='POST'&&route==='/api/aiconfig'){
+        if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
+        const a=await readJson(req);
+        if(uid!=='local'){const u=users[uid];if(u){u.aiConfig={apiKey:String(a.apiKey||'').trim(),model:String(a.model||'').trim(),baseUrl:String(a.baseUrl||'').trim().replace(/\/+$/,'')};await saveUsers();}}
+        return send(200,publicState(await loadState(uid),aiEnvFor(uid)));
       }
 
       if(req.method==='POST'&&['/api/turn','/api/reset','/api/chat','/api/office','/api/army','/api/rival','/api/logout'].includes(route)){
@@ -98,16 +107,16 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
           if(route==='/api/reset'){if(a.gameId!==state.id||a.revision!==state.revision)fail('存档已更新，请刷新。',409);await persist(uid,initial());}
           else if(route==='/api/turn'){
             if(a.mode==='ai'&&(state.tokensUsed||0)+TURN_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完，请改用规则模式或重新登基。',429);
-            if(validateAction(state,a)){const result=await simulate(state,a,env,fetcher);const next=settle(state,a,result);if(a.mode==='ai')next.tokensUsed=(state.tokensUsed||0)+TURN_TOKEN_COST;await persist(uid,next);}
+            if(validateAction(state,a)){const result=await simulate(state,a,aiEnv,fetcher);const next=settle(state,a,result);if(a.mode==='ai')next.tokensUsed=(state.tokensUsed||0)+TURN_TOKEN_COST;await persist(uid,next);}
           }
           else if(route==='/api/chat'){
             if((state.tokensUsed||0)+CHAT_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完。',429);
-            if(validateRequest(state,a)){const r=await chat(state,a.ministerId,a.message,env,fetcher);const next=applyChat(state,a,r);if(env.DEEPSEEK_API_KEY)next.tokensUsed=(state.tokensUsed||0)+CHAT_TOKEN_COST;await persist(uid,next);return send(200,{...publicState(next),reply:r.reply,relationDelta:r.relationDelta,loyaltyDelta:r.loyaltyDelta});}
+            if(validateRequest(state,a)){const r=await chat(state,a.ministerId,a.message,aiEnv,fetcher);const next=applyChat(state,a,r);if(aiEnv.DEEPSEEK_API_KEY)next.tokensUsed=(state.tokensUsed||0)+CHAT_TOKEN_COST;await persist(uid,next);return send(200,{...publicState(next,aiEnv),reply:r.reply,relationDelta:r.relationDelta,loyaltyDelta:r.loyaltyDelta});}
           }
           else if(route==='/api/office'){if(validateRequest(state,a))await persist(uid,applyOffice(state,a));}
           else if(route==='/api/army'){if(validateRequest(state,a))await persist(uid,applyArmy(state,a));}
           else if(route==='/api/rival'){if(validateRequest(state,a))await persist(uid,applyRivalAction(state,a));}
-          return send(200,publicState(states.get(uid)));
+          return send(200,publicState(states.get(uid),aiEnv));
         }finally{busy.delete(uid)}
       }
 
