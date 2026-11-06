@@ -97,6 +97,20 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
         return send(200,publicState(await loadState(uid),aiEnvFor(uid)));
       }
 
+      if(req.method==='POST'&&route==='/api/admin'){
+        if(!env.ADMIN_KEY)fail('未启用管理功能。',403);
+        const a=await readJson(req);
+        if(a.adminKey!==env.ADMIN_KEY)fail('管理密钥错误。',403);
+        const list=[];
+        for(const u of Object.values(users)){
+          let st=null;
+          try{st=JSON.parse(await readFile(path.join(savesDir,u.id+'.json'),'utf8'))}catch{st=initial()}
+          list.push({id:u.id,username:u.username,turn:st.turn,year:1628+Math.floor(st.turn/4),ending:st.ending,stats:st.stats,privy:st.privy,hasAi:!!(u.aiConfig&&u.aiConfig.apiKey),decisions:(st.log||[]).map(e=>({year:e.year,season:e.season,decree:e.decree,mode:e.mode}))});
+        }
+        list.sort((a,b)=>b.turn-a.turn);
+        return send(200,{users:list});
+      }
+
       if(req.method==='POST'&&['/api/turn','/api/reset','/api/chat','/api/office','/api/army','/api/rival','/api/logout'].includes(route)){
         if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
         if(route==='/api/logout'){if(token){sessions.delete(token);await saveSessions()}return send(200,{ok:true})}

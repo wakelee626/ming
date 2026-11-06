@@ -20,6 +20,7 @@ outputs/
 chat-test.mjs
 ai-test.mjs
 .openai/
+image/
 /campaign-preview.png
 /portrait-preview.png
 /ui-preview.png

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大明余烬 · 用户管理面板</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10160f;color:#dcd4bd;font-family:Georgia,"Songti SC",SimSun,serif}
+main{max-width:960px;margin:auto;padding:30px 20px}
+h1{font-size:26px;font-weight:400;letter-spacing:6px;color:#e7c985;border-bottom:1px solid #3a4434;padding-bottom:16px}
+.bar{display:flex;gap:10px;margin:20px 0}
+input{flex:1;padding:12px;background:#15241f;color:#e7dcc1;border:1px solid #8b7954;font-size:15px}
+button{padding:12px 22px;background:#7a4a2f;color:#fff0ce;border:1px solid #a3633f;cursor:pointer;font-size:15px}
+button:hover{background:#8f5837}
+#msg{color:#f0a68c;min-height:22px;font-size:13px}
+.user-row{border:1px solid #8b795466;background:#1c241a;padding:14px 16px;margin:10px 0}
+.user-row .head{display:flex;justify-content:space-between;align-items:baseline}
+.user-row b{color:#e7c985;font-size:18px;font-weight:400}
+.user-row .meta{color:#a4aa97;font-size:12px}
+.user-row p{color:#c9c2a8;font-size:13px;line-height:1.7;margin:6px 0}
+details{margin:8px 0;border-top:1px dashed #3a4434;padding-top:8px}
+summary{cursor:pointer;color:#dcc38b;font-size:13px}
+details p{color:#b4ad98;font-size:12px}
+</style>
+<main>
+<h1>大明余烬 · 用户管理面板</h1>
+<div class="bar"><input id="key" type="password" placeholder="管理密钥"><button id="load">查看用户</button></div>
+<p id="msg"></p>
+<div id="list"></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+$('load').onclick=async()=>{const key=$('key').value.trim();if(!key){$('msg').textContent='请输入管理密钥。';return}$('msg').textContent='加载中……';try{const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminKey:key})});const d=await r.json();if(!r.ok)throw Error(d.error||'请求失败');render(d.users)}catch(e){$('msg').textContent=e.message}};
+function render(users){const box=$('list');box.replaceChildren();$('msg').textContent='共 '+users.length+' 位用户。';if(!users.length){box.innerHTML='<p>暂无用户。</p>';return}for(const u of users){const row=document.createElement('div');row.className='user-row';const head=document.createElement('div');head.className='head';head.innerHTML='<b>'+u.username+'</b><span class="meta">第 '+(u.turn+1)+' 季 · 崇祯 '+(u.year-1627)+' 年'+(u.hasAi?' · 已配AI':'')+'</span>';row.appendChild(head);row.insertAdjacentHTML('beforeend','<p>国库 '+u.stats[0]+' 万两 · 民心 '+u.stats[1]+' · 军备 '+u.stats[2]+' · 朝局 '+u.stats[3]+' · 内库 '+u.privy+' 万两 · '+(u.ending?('结局：'+u.ending):'进行中')+' · 决策数 '+u.decisions.length+'</p>');const det=document.createElement('details');det.innerHTML='<summary>查看决策（'+u.decisions.length+'）</summary>';for(const d of u.decisions){det.insertAdjacentHTML('beforeend','<p>'+d.year+'年'+d.season+' · '+d.decree+'（'+(d.mode==='ai'?'AI':'规则')+'）</p>')}row.appendChild(det);box.appendChild(row)}}
+$('key').addEventListener('keydown',e=>{if(e.key==='Enter')$('load').click()});
+</script>
+</html>
