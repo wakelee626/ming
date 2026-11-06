@@ -1,0 +1,123 @@
+import http from 'node:http';
+import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
+import {scryptSync,randomBytes,timingSafeEqual,randomUUID} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+import {initial,validateAction,validateRequest,simulate,settle,chat,applyChat,applyOffice,applyArmy,applyRivalAction,fail,policies,officeDuties,eventForYear,techTree,civicTree,TOKEN_BUDGET,TURN_TOKEN_COST,CHAT_TOKEN_COST} from './engine.mjs';
+
+const root=path.dirname(fileURLToPath(import.meta.url));
+const MIME={html:'text/html; charset=utf-8',js:'text/javascript; charset=utf-8',css:'text/css; charset=utf-8',json:'application/json; charset=utf-8',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',svg:'image/svg+xml',ico:'image/x-icon',txt:'text/plain; charset=utf-8',woff2:'font/woff2'};
+const CSP="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'";
+
+export async function createGameServer({env=process.env,dataDir=path.join(root,'data'),fetcher=fetch,requireAuth=env.AUTH==='1'}={}){
+  const savesDir=path.join(dataDir,'saves');
+  await mkdir(savesDir,{recursive:true});
+  const usersFile=path.join(dataDir,'users.json');
+  let users={};
+  try{users=JSON.parse(await readFile(usersFile,'utf8'))}catch{users={}}
+  const saveUsers=async()=>{await writeFile(usersFile+'.tmp',JSON.stringify(users),'utf8');await rename(usersFile+'.tmp',usersFile)};
+  const sessionsFile=path.join(dataDir,'sessions.json');
+  const sessions=new Map();
+  try{for(const [k,v] of Object.entries(JSON.parse(await readFile(sessionsFile,'utf8'))))sessions.set(k,v)}catch{}
+  const saveSessions=async()=>{await writeFile(sessionsFile+'.tmp',JSON.stringify(Object.fromEntries(sessions)),'utf8');await rename(sessionsFile+'.tmp',sessionsFile)};
+  const states=new Map();
+  const busy=new Set();
+  const hashPw=pw=>{const salt=randomBytes(16).toString('hex');return{salt,hash:scryptSync(pw,salt,64).toString('hex')}};
+  const verifyPw=(pw,salt,hash)=>{try{return timingSafeEqual(Buffer.from(hash,'hex'),scryptSync(pw,salt,64))}catch{return false}};
+  const loadState=async uid=>{
+    if(!states.has(uid)){
+      try{states.set(uid,JSON.parse(await readFile(path.join(savesDir,uid+'.json'),'utf8')))}
+      catch{states.set(uid,initial())}
+    }
+    return states.get(uid);
+  };
+  const persist=async(uid,next)=>{states.set(uid,next);const f=path.join(savesDir,uid+'.json');await writeFile(f+'.tmp',JSON.stringify(next),'utf8');await rename(f+'.tmp',f)};
+  const publicState=state=>{const ev=eventForYear(state);return{state,aiConfigured:!!env.DEEPSEEK_API_KEY,authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
+  const readJson=async req=>{
+    if(!req.headers['content-type']?.startsWith('application/json'))fail('需要 JSON 请求。',415);
+    let raw='';for await(const part of req){raw+=part;if(Buffer.byteLength(raw)>16384)fail('请求过长。',413)}
+    try{return JSON.parse(raw)}catch{fail('无效 JSON。',400)}
+  };
+  return http.createServer(async(req,res)=>{
+    const send=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data))};
+    try{
+      const route=new URL(req.url,'http://localhost').pathname;
+      if(req.method==='POST'&&req.headers.origin){
+        const host=req.headers.host||'';
+        if(req.headers.origin!=='http://'+host&&req.headers.origin!=='https://'+host)fail('不接受跨站请求。',403);
+      }
+      const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim();
+      const uid=requireAuth?sessions.get(token):'local';
+
+      if(req.method==='GET'&&route!=='/api/game'){
+        const rel=route==='/'?'index.html':route.slice(1);
+        const ext=rel.includes('.')?rel.split('.').pop().toLowerCase():'';
+        if(MIME[ext]){
+          const resolved=path.resolve(root,'dist',rel);
+          const distRoot=path.resolve(root,'dist');
+          if(resolved===distRoot||resolved.startsWith(distRoot+path.sep)){
+            try{const body=await readFile(resolved);res.writeHead(200,{'Content-Type':MIME[ext],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':CSP});return res.end(body)}
+            catch{return send(404,{error:'未找到资源。'})}
+          }
+        }
+        return send(404,{error:'未找到页面。'});
+      }
+
+      if(req.method==='GET'&&route==='/api/game'){
+        if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
+        return send(200,publicState(await loadState(uid)));
+      }
+
+      if(req.method==='POST'&&(route==='/api/signup'||route==='/api/login')){
+        const a=await readJson(req);
+        const username=String(a.username||'').trim();
+        const password=String(a.password||'');
+        if(!/^[\w\u4e00-\u9fa5]{2,20}$/.test(username))fail('用户名需为 2—20 位字母、数字、下划线或中文。',400);
+        if(password.length<6||password.length>64)fail('密码需为 6—64 位。',400);
+        let user=Object.values(users).find(u=>u.username===username);
+        if(route==='/api/signup'){
+          if(user)fail('该用户名已被注册。',409);
+          user={id:randomUUID(),username,...hashPw(password)};
+          users[user.id]=user;
+          await saveUsers();
+        }else{
+          if(!user||!verifyPw(password,user.salt,user.hash))fail('用户名或密码错误。',401);
+        }
+        const t=randomBytes(24).toString('hex');
+        sessions.set(t,user.id);await saveSessions();
+        return send(200,{token:t,...publicState(await loadState(user.id))});
+      }
+
+      if(req.method==='POST'&&['/api/turn','/api/reset','/api/chat','/api/office','/api/army','/api/rival','/api/logout'].includes(route)){
+        if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
+        if(route==='/api/logout'){if(token){sessions.delete(token);await saveSessions()}return send(200,{ok:true})}
+        const a=await readJson(req);
+        const state=await loadState(uid);
+        if(busy.has(uid))fail('当前奏折正在推演，请稍后重试。',409);busy.add(uid);
+        try{
+          if(route==='/api/reset'){if(a.gameId!==state.id||a.revision!==state.revision)fail('存档已更新，请刷新。',409);await persist(uid,initial());}
+          else if(route==='/api/turn'){
+            if(a.mode==='ai'&&(state.tokensUsed||0)+TURN_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完，请改用规则模式或重新登基。',429);
+            if(validateAction(state,a)){const result=await simulate(state,a,env,fetcher);const next=settle(state,a,result);if(a.mode==='ai')next.tokensUsed=(state.tokensUsed||0)+TURN_TOKEN_COST;await persist(uid,next);}
+          }
+          else if(route==='/api/chat'){
+            if((state.tokensUsed||0)+CHAT_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完。',429);
+            if(validateRequest(state,a)){const r=await chat(state,a.ministerId,a.message,env,fetcher);const next=applyChat(state,a,r);if(env.DEEPSEEK_API_KEY)next.tokensUsed=(state.tokensUsed||0)+CHAT_TOKEN_COST;await persist(uid,next);return send(200,{...publicState(next),reply:r.reply,relationDelta:r.relationDelta,loyaltyDelta:r.loyaltyDelta});}
+          }
+          else if(route==='/api/office'){if(validateRequest(state,a))await persist(uid,applyOffice(state,a));}
+          else if(route==='/api/army'){if(validateRequest(state,a))await persist(uid,applyArmy(state,a));}
+          else if(route==='/api/rival'){if(validateRequest(state,a))await persist(uid,applyRivalAction(state,a));}
+          return send(200,publicState(states.get(uid)));
+        }finally{busy.delete(uid)}
+      }
+
+      send(404,{error:'未找到页面。'});
+    }catch(e){send(e.status||500,{error:e.status?e.message:'存档操作失败，本次未确认结算，请刷新检查。'})}
+  });
+}
+
+if(process.argv[1]===fileURLToPath(import.meta.url)){
+  const server=await createGameServer();
+  const host=process.env.HOST||'127.0.0.1';
+  server.listen(Number(process.env.PORT||3210),host,()=>console.log(`大明余烬：http://${host}:${server.address().port}`));
+}

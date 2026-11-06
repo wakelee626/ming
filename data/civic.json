@@ -1,0 +1,341 @@
+[
+ {
+  "id": "tax-yibianfa",
+  "name": "一条鞭法",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "treasury": 30
+  },
+  "flavor": "化繁为简，计亩征银。"
+ },
+ {
+  "id": "tax-land",
+  "name": "清丈田亩",
+  "tier": 2,
+  "prereqs": [
+   "tax-yibianfa"
+  ],
+  "cost": 40,
+  "effects": {
+   "treasury": 30,
+   "popular": 1
+  },
+  "flavor": "丈量田亩，隐田毕露。"
+ },
+ {
+  "id": "tax-trade",
+  "name": "商税",
+  "tier": 2,
+  "prereqs": [
+   "tax-yibianfa"
+  ],
+  "cost": 40,
+  "effects": {
+   "treasury": 40
+  },
+  "flavor": "重农不抑商，课税有方。"
+ },
+ {
+  "id": "gov-clear",
+  "name": "澄清吏治",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "court": 2
+  },
+  "flavor": "汰劣擢贤，吏治清明。"
+ },
+ {
+  "id": "gov-kaocheng",
+  "name": "考成法",
+  "tier": 2,
+  "prereqs": [
+   "gov-clear"
+  ],
+  "cost": 40,
+  "effects": {
+   "court": 2,
+   "treasury": 10
+  },
+  "flavor": "循名责实，赏罚分明。"
+ },
+ {
+  "id": "gov-jingcha",
+  "name": "京察",
+  "tier": 2,
+  "prereqs": [
+   "gov-clear"
+  ],
+  "cost": 40,
+  "effects": {
+   "court": 3
+  },
+  "flavor": "六载大计，黜陟有序。"
+ },
+ {
+  "id": "clan-limit",
+  "name": "限制宗室俸禄",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 35,
+  "effects": {
+   "treasury": 30,
+   "court": -1
+  },
+  "flavor": "裁抑宗禄，减负国库。"
+ },
+ {
+  "id": "clan-reform",
+  "name": "宗藩改革",
+  "tier": 2,
+  "prereqs": [
+   "clan-limit"
+  ],
+  "cost": 45,
+  "effects": {
+   "treasury": 40,
+   "court": -1
+  },
+  "flavor": "藩禁渐弛，自食其力。"
+ },
+ {
+  "id": "land-reform",
+  "name": "土地改革",
+  "tier": 3,
+  "prereqs": [
+   "clan-reform"
+  ],
+  "cost": 60,
+  "effects": {
+   "treasury": 40,
+   "popular": 3
+  },
+  "flavor": "均田减租，耕者有其田。"
+ },
+ {
+  "id": "army-recruit",
+  "name": "募兵制",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "garrison": 2
+  },
+  "flavor": "募兵代役，精兵简政。"
+ },
+ {
+  "id": "army-farm",
+  "name": "军屯",
+  "tier": 2,
+  "prereqs": [
+   "army-recruit"
+  ],
+  "cost": 40,
+  "effects": {
+   "garrison": 2,
+   "treasury": 10
+  },
+  "flavor": "边军屯田，自给自足。"
+ },
+ {
+  "id": "army-pay",
+  "name": "兵饷改革",
+  "tier": 3,
+  "prereqs": [
+   "army-farm"
+  ],
+  "cost": 50,
+  "effects": {
+   "garrison": 3
+  },
+  "flavor": "足饷练军，杜绝虚冒。"
+ },
+ {
+  "id": "edu-abolish",
+  "name": "废科举",
+  "tier": 3,
+  "prereqs": [
+   "gov-kaocheng"
+  ],
+  "cost": 55,
+  "effects": {
+   "court": -1,
+   "treasury": 20
+  },
+  "flavor": "罢八股，开新学之途。"
+ },
+ {
+  "id": "edu-school",
+  "name": "新式学堂",
+  "tier": 4,
+  "prereqs": [
+   "edu-abolish"
+  ],
+  "cost": 65,
+  "effects": {
+   "popular": 3,
+   "treasury": 10
+  },
+  "flavor": "分科设教，格致之学。"
+ },
+ {
+  "id": "edu-compulsory",
+  "name": "义务教育",
+  "tier": 5,
+  "prereqs": [
+   "edu-school"
+  ],
+  "cost": 80,
+  "effects": {
+   "popular": 4,
+   "treasury": 10
+  },
+  "flavor": "蒙学普及，民智大开。"
+ },
+ {
+  "id": "fin-credit",
+  "name": "钱庄信用",
+  "tier": 2,
+  "prereqs": [],
+  "cost": 45,
+  "effects": {
+   "treasury": 20
+  },
+  "flavor": "票号汇兑，信用渐立。"
+ },
+ {
+  "id": "fin-paper",
+  "name": "官钞",
+  "tier": 3,
+  "prereqs": [
+   "fin-credit"
+  ],
+  "cost": 55,
+  "effects": {
+   "treasury": 30
+  },
+  "flavor": "发行官钞，通融有无。"
+ },
+ {
+  "id": "fin-central",
+  "name": "中央银行",
+  "tier": 4,
+  "prereqs": [
+   "fin-paper"
+  ],
+  "cost": 70,
+  "effects": {
+   "treasury": 40
+  },
+  "flavor": "总揽钞法，调剂国用。"
+ },
+ {
+  "id": "fin-modern",
+  "name": "现代金融",
+  "tier": 5,
+  "prereqs": [
+   "fin-central"
+  ],
+  "cost": 85,
+  "effects": {
+   "treasury": 50
+  },
+  "flavor": "股市债市，资本涌动。"
+ },
+ {
+  "id": "law-baojia",
+  "name": "保甲",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "popular": 1,
+   "court": 1
+  },
+  "flavor": "编户保甲，守望相助。"
+ },
+ {
+  "id": "law-police",
+  "name": "警察制",
+  "tier": 3,
+  "prereqs": [
+   "law-baojia"
+  ],
+  "cost": 50,
+  "effects": {
+   "popular": 2,
+   "court": 1
+  },
+  "flavor": "专职巡警，地方安靖。"
+ },
+ {
+  "id": "law-justice",
+  "name": "现代司法",
+  "tier": 4,
+  "prereqs": [
+   "law-police"
+  ],
+  "cost": 65,
+  "effects": {
+   "popular": 3,
+   "court": 1
+  },
+  "flavor": "司法独立，程序正义。"
+ },
+ {
+  "id": "law-rule",
+  "name": "法治",
+  "tier": 5,
+  "prereqs": [
+   "law-justice"
+  ],
+  "cost": 80,
+  "effects": {
+   "popular": 4,
+   "court": 1
+  },
+  "flavor": "法大于权，人皆有法可依。"
+ },
+ {
+  "id": "gov-cabinet",
+  "name": "内阁集议",
+  "tier": 2,
+  "prereqs": [],
+  "cost": 45,
+  "effects": {
+   "court": 2
+  },
+  "flavor": "廷议共决，广纳群言。"
+ },
+ {
+  "id": "gov-constitution",
+  "name": "立宪",
+  "tier": 4,
+  "prereqs": [
+   "gov-cabinet"
+  ],
+  "cost": 70,
+  "effects": {
+   "court": 3,
+   "popular": 2
+  },
+  "flavor": "君权受限，宪法为纲。"
+ },
+ {
+  "id": "gov-republic",
+  "name": "代议制",
+  "tier": 6,
+  "prereqs": [
+   "gov-constitution"
+  ],
+  "cost": 95,
+  "effects": {
+   "popular": 4,
+   "court": 1
+  },
+  "flavor": "民选代议，天下为公。"
+ }
+]

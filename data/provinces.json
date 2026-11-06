@@ -1,0 +1,18 @@
+[
+  {"id":"beizhili","name":"北直隶","tax":60,"popular":55,"garrison":50,"develop":60,"status":"平稳"},
+  {"id":"nanzhili","name":"南直隶","tax":78,"popular":60,"garrison":55,"develop":70,"status":"富庶"},
+  {"id":"shandong","name":"山东","tax":55,"popular":52,"garrison":48,"develop":52,"status":"平稳"},
+  {"id":"shanxi","name":"山西","tax":45,"popular":48,"garrison":55,"develop":45,"status":"平稳"},
+  {"id":"henan","name":"河南","tax":50,"popular":45,"garrison":42,"develop":45,"status":"平稳"},
+  {"id":"shaanxi","name":"陕西","tax":35,"popular":40,"garrison":30,"develop":40,"status":"旱灾"},
+  {"id":"sichuan","name":"四川","tax":55,"popular":50,"garrison":40,"develop":50,"status":"平稳"},
+  {"id":"huguang","name":"湖广","tax":58,"popular":50,"garrison":38,"develop":52,"status":"平稳"},
+  {"id":"jiangxi","name":"江西","tax":60,"popular":52,"garrison":35,"develop":50,"status":"富庶"},
+  {"id":"zhejiang","name":"浙江","tax":72,"popular":58,"garrison":40,"develop":65,"status":"富庶"},
+  {"id":"fujian","name":"福建","tax":55,"popular":55,"garrison":35,"develop":55,"status":"海防"},
+  {"id":"guangdong","name":"广东","tax":60,"popular":55,"garrison":32,"develop":55,"status":"富庶"},
+  {"id":"guangxi","name":"广西","tax":35,"popular":45,"garrison":38,"develop":38,"status":"平稳"},
+  {"id":"yunnan","name":"云南","tax":30,"popular":42,"garrison":35,"develop":35,"status":"边地"},
+  {"id":"guizhou","name":"贵州","tax":25,"popular":40,"garrison":30,"develop":30,"status":"边地"},
+  {"id":"liaodong","name":"辽东","tax":20,"popular":45,"garrison":60,"develop":30,"status":"边警"}
+]

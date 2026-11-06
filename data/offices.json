@@ -1,0 +1,8 @@
+[
+  {"id":"shoufu","title":"首辅","duty":"吏","mod":{"stat":"court","value":3},"holder":null},
+  {"id":"hubu","title":"户部尚书","duty":"户","mod":{"stat":"treasury","value":4},"holder":null},
+  {"id":"bingbu","title":"兵部尚书","duty":"兵","mod":{"stat":"garrison","value":3},"holder":null},
+  {"id":"gongbu","title":"工部尚书","duty":"工","mod":{"stat":"popular","value":2},"holder":null},
+  {"id":"libu","title":"吏部尚书","duty":"吏","mod":{"stat":"court","value":2},"holder":null},
+  {"id":"liaodongdushi","title":"辽东督师","duty":"边","mod":{"stat":"garrison","value":3},"holder":null}
+]

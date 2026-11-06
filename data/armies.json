@@ -1,0 +1,13 @@
+[
+  {"id":"jingying","name":"京营","unitType":"京营","province":"beizhili","men":30000,"morale":55,"training":50,"equipment":55,"commander":null},
+  {"id":"liaodong-jun","name":"辽东军","unitType":"边军","province":"liaodong","men":20000,"morale":60,"training":65,"equipment":60,"commander":null},
+  {"id":"guanning-tieqi","name":"关宁铁骑","unitType":"骑兵","province":"liaodong","men":8000,"morale":68,"training":70,"equipment":62,"commander":null},
+  {"id":"jizhen-jun","name":"蓟镇军","unitType":"边军","province":"beizhili","men":15000,"morale":55,"training":60,"equipment":58,"commander":null},
+  {"id":"xuanda-jun","name":"宣大军","unitType":"边军","province":"shanxi","men":18000,"morale":52,"training":58,"equipment":55,"commander":null},
+  {"id":"shaanxi-jun","name":"陕西边军","unitType":"边军","province":"shaanxi","men":16000,"morale":45,"training":50,"equipment":48,"commander":null},
+  {"id":"zhejiang-shuishi","name":"浙江水师","unitType":"水师","province":"zhejiang","men":12000,"morale":60,"training":55,"equipment":52,"commander":null},
+  {"id":"fujian-shuishi","name":"福建水师","unitType":"水师","province":"fujian","men":10000,"morale":58,"training":52,"equipment":50,"commander":null},
+  {"id":"chuan-jun","name":"川军","unitType":"步兵","province":"sichuan","men":12000,"morale":50,"training":48,"equipment":45,"commander":null},
+  {"id":"huguang-jun","name":"湖广军","unitType":"步兵","province":"huguang","men":14000,"morale":48,"training":46,"equipment":45,"commander":null},
+  {"id":"shandong-jun","name":"山东军","unitType":"步兵","province":"shandong","men":10000,"morale":50,"training":48,"equipment":46,"commander":null}
+]

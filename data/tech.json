@@ -1,0 +1,449 @@
+[
+ {
+  "id": "farm-tun",
+  "name": "屯田制",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "treasury": 20,
+   "popular": 1
+  },
+  "flavor": "兵民合一，寓兵于农。"
+ },
+ {
+  "id": "farm-crop",
+  "name": "番薯玉米引种",
+  "tier": 1,
+  "prereqs": [
+   "farm-tun"
+  ],
+  "cost": 35,
+  "effects": {
+   "popular": 2,
+   "treasury": 10
+  },
+  "flavor": "耐旱新粮，救荒续命。"
+ },
+ {
+  "id": "farm-irrigation",
+  "name": "水利灌溉",
+  "tier": 2,
+  "prereqs": [
+   "farm-crop"
+  ],
+  "cost": 40,
+  "effects": {
+   "popular": 2,
+   "treasury": 20
+  },
+  "flavor": "疏浚沟渠，旱涝保收。"
+ },
+ {
+  "id": "gun-firearm",
+  "name": "火器普及",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "garrison": 2
+  },
+  "flavor": "鸟铳列装，火器成军。"
+ },
+ {
+  "id": "gun-cannon",
+  "name": "红衣大炮",
+  "tier": 2,
+  "prereqs": [
+   "gun-firearm"
+  ],
+  "cost": 40,
+  "effects": {
+   "garrison": 3
+  },
+  "flavor": "西洋重炮，攻城破阵。"
+ },
+ {
+  "id": "gun-musket",
+  "name": "新式火铳",
+  "tier": 2,
+  "prereqs": [
+   "gun-firearm"
+  ],
+  "cost": 40,
+  "effects": {
+   "garrison": 3
+  },
+  "flavor": "铳制改良，射速更疾。"
+ },
+ {
+  "id": "sea-open",
+  "name": "开海禁",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "treasury": 30
+  },
+  "flavor": "弛禁通商，海贸兴隆。"
+ },
+ {
+  "id": "sea-fleet",
+  "name": "商船队",
+  "tier": 2,
+  "prereqs": [
+   "sea-open"
+  ],
+  "cost": 40,
+  "effects": {
+   "treasury": 30,
+   "garrison": 1
+  },
+  "flavor": "远洋船队，货通四海。"
+ },
+ {
+  "id": "sea-tariff",
+  "name": "海贸关税",
+  "tier": 2,
+  "prereqs": [
+   "sea-open"
+  ],
+  "cost": 40,
+  "effects": {
+   "treasury": 40
+  },
+  "flavor": "设关征税，岁入大增。"
+ },
+ {
+  "id": "iron-coke",
+  "name": "焦炭冶铁",
+  "tier": 2,
+  "prereqs": [],
+  "cost": 40,
+  "effects": {
+   "garrison": 2,
+   "treasury": 10
+  },
+  "flavor": "焦炭炼铁，钢质更纯。"
+ },
+ {
+  "id": "iron-crucible",
+  "name": "坩埚钢",
+  "tier": 3,
+  "prereqs": [
+   "iron-coke"
+  ],
+  "cost": 50,
+  "effects": {
+   "garrison": 3,
+   "treasury": 20
+  },
+  "flavor": "坩埚熔炼，精钢问世。"
+ },
+ {
+  "id": "iron-standard",
+  "name": "标准机件",
+  "tier": 4,
+  "prereqs": [
+   "iron-crucible"
+  ],
+  "cost": 60,
+  "effects": {
+   "garrison": 3,
+   "treasury": 30
+  },
+  "flavor": "统一规格，可互换部件。"
+ },
+ {
+  "id": "steam-engine",
+  "name": "蒸汽机",
+  "tier": 3,
+  "prereqs": [
+   "iron-crucible"
+  ],
+  "cost": 60,
+  "effects": {
+   "treasury": 40,
+   "garrison": 2
+  },
+  "flavor": "蒸汽动力，改天换地。"
+ },
+ {
+  "id": "steam-rail",
+  "name": "铁路",
+  "tier": 4,
+  "prereqs": [
+   "steam-engine"
+  ],
+  "cost": 70,
+  "effects": {
+   "treasury": 50,
+   "garrison": 2
+  },
+  "flavor": "铁轨纵横，万里通途。"
+ },
+ {
+  "id": "steam-warship",
+  "name": "蒸汽战舰",
+  "tier": 4,
+  "prereqs": [
+   "steam-engine"
+  ],
+  "cost": 70,
+  "effects": {
+   "garrison": 4,
+   "treasury": 20
+  },
+  "flavor": "蒸汽铁甲，横行海疆。"
+ },
+ {
+  "id": "textile-spin",
+  "name": "纺纱机",
+  "tier": 3,
+  "prereqs": [
+   "steam-engine"
+  ],
+  "cost": 55,
+  "effects": {
+   "treasury": 40
+  },
+  "flavor": "机器纺纱，工效倍增。"
+ },
+ {
+  "id": "textile-factory",
+  "name": "工厂制",
+  "tier": 4,
+  "prereqs": [
+   "textile-spin"
+  ],
+  "cost": 65,
+  "effects": {
+   "treasury": 50
+  },
+  "flavor": "集中生产，机器轰鸣。"
+ },
+ {
+  "id": "textile-line",
+  "name": "流水线",
+  "tier": 5,
+  "prereqs": [
+   "textile-factory"
+  ],
+  "cost": 75,
+  "effects": {
+   "treasury": 60
+  },
+  "flavor": "分工协作，量产奇迹。"
+ },
+ {
+  "id": "elec-magnet",
+  "name": "电磁学",
+  "tier": 4,
+  "prereqs": [
+   "steam-engine"
+  ],
+  "cost": 70,
+  "effects": {
+   "treasury": 30,
+   "garrison": 2
+  },
+  "flavor": "电与磁，揭开新纪元。"
+ },
+ {
+  "id": "elec-generator",
+  "name": "发电机",
+  "tier": 5,
+  "prereqs": [
+   "elec-magnet"
+  ],
+  "cost": 80,
+  "effects": {
+   "treasury": 40,
+   "garrison": 2
+  },
+  "flavor": "发电储电，光明万家。"
+ },
+ {
+  "id": "elec-telegraph",
+  "name": "电报",
+  "tier": 5,
+  "prereqs": [
+   "elec-magnet"
+  ],
+  "cost": 75,
+  "effects": {
+   "treasury": 30,
+   "garrison": 3
+  },
+  "flavor": "瞬息千里，军情先机。"
+ },
+ {
+  "id": "elec-grid",
+  "name": "电网",
+  "tier": 6,
+  "prereqs": [
+   "elec-generator"
+  ],
+  "cost": 90,
+  "effects": {
+   "treasury": 50,
+   "popular": 2
+  },
+  "flavor": "电力入城，不夜之都。"
+ },
+ {
+  "id": "gun-breech",
+  "name": "后膛枪",
+  "tier": 4,
+  "prereqs": [
+   "gun-musket"
+  ],
+  "cost": 70,
+  "effects": {
+   "garrison": 4
+  },
+  "flavor": "后膛装填，射速飞涨。"
+ },
+ {
+  "id": "gun-machine",
+  "name": "机关枪",
+  "tier": 5,
+  "prereqs": [
+   "gun-breech"
+  ],
+  "cost": 85,
+  "effects": {
+   "garrison": 5
+  },
+  "flavor": "连发扫射，战场绞肉。"
+ },
+ {
+  "id": "gun-ironclad",
+  "name": "装甲舰",
+  "tier": 6,
+  "prereqs": [
+   "steam-warship",
+   "gun-machine"
+  ],
+  "cost": 95,
+  "effects": {
+   "garrison": 6
+  },
+  "flavor": "铁甲巨舰，海上堡垒。"
+ },
+ {
+  "id": "air-balloon",
+  "name": "热气球",
+  "tier": 4,
+  "prereqs": [],
+  "cost": 70,
+  "effects": {
+   "garrison": 2
+  },
+  "flavor": "升空侦察，俯瞰千里。"
+ },
+ {
+  "id": "air-airship",
+  "name": "飞艇",
+  "tier": 5,
+  "prereqs": [
+   "air-balloon"
+  ],
+  "cost": 80,
+  "effects": {
+   "garrison": 3,
+   "treasury": 20
+  },
+  "flavor": "可控航器，遨游天际。"
+ },
+ {
+  "id": "air-plane",
+  "name": "飞机",
+  "tier": 6,
+  "prereqs": [
+   "air-airship"
+  ],
+  "cost": 95,
+  "effects": {
+   "garrison": 5
+  },
+  "flavor": "动力飞行，制空权始。"
+ },
+ {
+  "id": "med-vaccine",
+  "name": "种痘",
+  "tier": 2,
+  "prereqs": [],
+  "cost": 40,
+  "effects": {
+   "popular": 3
+  },
+  "flavor": "人痘免疫，防患未然。"
+ },
+ {
+  "id": "med-bacteria",
+  "name": "细菌学",
+  "tier": 4,
+  "prereqs": [
+   "med-vaccine"
+  ],
+  "cost": 65,
+  "effects": {
+   "popular": 3
+  },
+  "flavor": "窥见微生物，疫病可防。"
+ },
+ {
+  "id": "med-modern",
+  "name": "现代医学",
+  "tier": 5,
+  "prereqs": [
+   "med-bacteria"
+  ],
+  "cost": 80,
+  "effects": {
+   "popular": 4
+  },
+  "flavor": "外科麻醉，起死回生。"
+ },
+ {
+  "id": "print-type",
+  "name": "活字印刷",
+  "tier": 1,
+  "prereqs": [],
+  "cost": 30,
+  "effects": {
+   "popular": 2
+  },
+  "flavor": "活字排印，典籍广布。"
+ },
+ {
+  "id": "print-press",
+  "name": "报刊",
+  "tier": 3,
+  "prereqs": [
+   "print-type"
+  ],
+  "cost": 50,
+  "effects": {
+   "popular": 3,
+   "treasury": 10
+  },
+  "flavor": "邸报风行，舆论渐成。"
+ },
+ {
+  "id": "print-wireless",
+  "name": "无线电报",
+  "tier": 6,
+  "prereqs": [
+   "elec-generator",
+   "print-press"
+  ],
+  "cost": 90,
+  "effects": {
+   "treasury": 30,
+   "garrison": 4
+  },
+  "flavor": "电波传讯，天涯比邻。"
+ }
+]

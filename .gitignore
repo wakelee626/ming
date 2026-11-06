@@ -1,0 +1,26 @@
+# 密钥（切勿提交）
+.env
+.env.*
+!.env.example
+
+# 运行时数据（存档、用户、会话）
+data/save.json
+data/saves/
+data/users.json
+data/sessions.json
+data/*.tmp
+
+# 依赖与构建产物
+node_modules/
+.sites-runtime/
+outputs/
+.test-data/
+
+# 临时文件与参考素材
+chat-test.mjs
+ai-test.mjs
+.openai/
+/campaign-preview.png
+/portrait-preview.png
+/ui-preview.png
+/ui参考/

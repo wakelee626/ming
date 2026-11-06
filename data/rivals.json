@@ -1,0 +1,16 @@
+[
+  {"id":"hongtaiji","name":"皇太极","title":"后金大汗","side":"后金","strength":45,"ambition":90,"relation":25,"influence":30,"trait":"雄才","alive":true,"bio":"后金大汗，改国号大清，屡次绕道入塞、叩问中原。"},
+  {"id":"duoergun","name":"多尔衮","title":"后金贝勒","side":"后金","strength":55,"ambition":80,"relation":20,"influence":20,"trait":"善战","alive":true,"bio":"努尔哈赤第十四子，骁勇善战，率八旗屡破明边。"},
+  {"id":"haoge","name":"豪格","title":"肃亲王","side":"后金","strength":45,"ambition":60,"relation":22,"influence":12,"trait":"刚勇","alive":true,"bio":"皇太极长子，屡立战功，勇而有谋。"},
+  {"id":"duoduo","name":"多铎","title":"豫亲王","side":"后金","strength":50,"ambition":70,"relation":20,"influence":12,"trait":"骁勇","alive":true,"bio":"多尔衮同母弟，八旗骁将，入塞掳掠最凶。"},
+  {"id":"ajige","name":"阿济格","title":"英亲王","side":"后金","strength":40,"ambition":50,"relation":20,"influence":10,"trait":"剽悍","alive":true,"bio":"努尔哈赤十二子，剽悍少谋，攻城略地。"},
+  {"id":"jirgalang","name":"济尔哈朗","title":"郑亲王","side":"后金","strength":40,"ambition":55,"relation":22,"influence":12,"trait":"持重","alive":true,"bio":"努尔哈赤之侄，持重老成，辅政宗王。"},
+  {"id":"fanwencheng","name":"范文程","title":"汉人谋臣","side":"后金","strength":20,"ambition":40,"relation":25,"influence":8,"trait":"谋略","alive":true,"bio":"汉人降清谋臣，为后金筹谋大计，深得信任。"},
+  {"id":"lizicheng","name":"李自成","title":"闯王","side":"流寇","strength":25,"ambition":85,"relation":15,"influence":20,"trait":"枭雄","alive":true,"bio":"流寇首领，号闯王，终将挥师入京、颠覆大明。"},
+  {"id":"zhangxianzhong","name":"张献忠","title":"大西王","side":"流寇","strength":25,"ambition":85,"relation":12,"influence":18,"trait":"残暴","alive":true,"bio":"另一支流寇魁首，建大西政权，嗜杀成性。"},
+  {"id":"gaoyingxiang","name":"高迎祥","title":"初代闯王","side":"流寇","strength":20,"ambition":70,"relation":12,"influence":10,"trait":"豪爽","alive":true,"bio":"闯王名号的首创者，李自成的引路人。"},
+  {"id":"luorucai","name":"罗汝才","title":"曹操","side":"流寇","strength":18,"ambition":60,"relation":12,"influence":8,"trait":"狡黠","alive":true,"bio":"流寇首领，绰号曹操，狡黠多变。"},
+  {"id":"liuzongmin","name":"刘宗敏","title":"权将军","side":"流寇","strength":20,"ambition":45,"relation":12,"influence":8,"trait":"勇悍","alive":true,"bio":"李自成麾下猛将，入京后主持追赃助饷。"},
+  {"id":"niujinxing","name":"牛金星","title":"谋士","side":"流寇","strength":10,"ambition":40,"relation":12,"influence":6,"trait":"智谋","alive":true,"bio":"举人出身，为李自成谋划大计。"},
+  {"id":"liyan","name":"李岩","title":"谋士","side":"流寇","strength":12,"ambition":40,"relation":12,"influence":6,"trait":"贤才","alive":true,"bio":"李自成麾下谋士，倡「迎闯王，不纳粮」。"}
+]
