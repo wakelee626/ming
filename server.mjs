@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {scryptSync,randomBytes,timingSafeEqual,randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {initial,validateAction,validateRequest,simulate,settle,chat,applyChat,applyOffice,applyArmy,applyRivalAction,fail,policies,officeDuties,eventForSeason,techTree,civicTree,TOKEN_BUDGET,TURN_TOKEN_COST,CHAT_TOKEN_COST} from './engine.mjs';
+import {initial,validateAction,validateRequest,simulate,settle,chat,applyChat,applyOffice,applyArmy,applyRivalAction,testAiConnectivity,fail,policies,officeDuties,eventForSeason,techTree,civicTree,TOKEN_BUDGET,TURN_TOKEN_COST,CHAT_TOKEN_COST} from './engine.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const MIME={html:'text/html; charset=utf-8',js:'text/javascript; charset=utf-8',css:'text/css; charset=utf-8',json:'application/json; charset=utf-8',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',svg:'image/svg+xml',ico:'image/x-icon',txt:'text/plain; charset=utf-8',woff2:'font/woff2'};
@@ -32,8 +32,9 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
     return states.get(uid);
   };
   const persist=async(uid,next)=>{states.set(uid,next);const f=path.join(savesDir,uid+'.json');await writeFile(f+'.tmp',JSON.stringify(next),'utf8');await rename(f+'.tmp',f)};
-  const aiEnvFor=uid=>{const cfg=(uid&&uid!=='local'&&users[uid]?.aiConfig)||{};return{DEEPSEEK_API_KEY:cfg.apiKey||env.DEEPSEEK_API_KEY,DEEPSEEK_MODEL:cfg.model||env.DEEPSEEK_MODEL,DEEPSEEK_BASE_URL:cfg.baseUrl||env.DEEPSEEK_BASE_URL,_own:!!(uid&&uid!=='local'&&cfg.apiKey)}};
-  const publicState=(state,aiEnv=env)=>{const ev=eventForSeason(state);return{state,aiConfigured:!!(aiEnv&&aiEnv.DEEPSEEK_API_KEY),aiModel:(aiEnv&&aiEnv.DEEPSEEK_MODEL)||null,hasOwnAi:!!(aiEnv&&aiEnv._own),authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
+  const aiEnvFor=uid=>{const isLocal=uid==='local';const cfg=(uid&&!isLocal&&users[uid]?.aiConfig)||{};return{DEEPSEEK_API_KEY:cfg.apiKey||(isLocal?env.DEEPSEEK_API_KEY:''),DEEPSEEK_MODEL:cfg.model||env.DEEPSEEK_MODEL||'deepseek-v4-pro',DEEPSEEK_BASE_URL:(cfg.baseUrl||'').replace(/\/+$/,'')||env.DEEPSEEK_BASE_URL||'https://napi.t.e0b.cc/v1',_own:!!cfg.apiKey,_verified:!!(cfg.apiKey&&cfg.verified)}};
+  const aiReady=uid=>{const e=aiEnvFor(uid);return !!(e.DEEPSEEK_API_KEY&&(uid==='local'||e._verified))};
+  const publicState=(state,aiEnv=env)=>{const ev=eventForSeason(state);return{state,aiConfigured:!!(aiEnv&&aiEnv.DEEPSEEK_API_KEY),aiVerified:!!(aiEnv&&aiEnv._verified),aiModel:(aiEnv&&aiEnv.DEEPSEEK_MODEL)||null,hasOwnAi:!!(aiEnv&&aiEnv._own),authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
   const readJson=async req=>{
     if(!req.headers['content-type']?.startsWith('application/json'))fail('需要 JSON 请求。',415);
     let raw='';for await(const part of req){raw+=part;if(Buffer.byteLength(raw)>16384)fail('请求过长。',413)}
@@ -93,8 +94,18 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
       if(req.method==='POST'&&route==='/api/aiconfig'){
         if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
         const a=await readJson(req);
-        if(uid!=='local'){const u=users[uid];if(u){u.aiConfig={apiKey:String(a.apiKey||'').trim(),model:String(a.model||'').trim(),baseUrl:String(a.baseUrl||'').trim().replace(/\/+$/,'')};await saveUsers();}}
+        if(uid!=='local'){const u=users[uid];if(u){u.aiConfig={apiKey:String(a.apiKey||'').trim(),model:String(a.model||'').trim(),baseUrl:String(a.baseUrl||'').trim().replace(/\/+$/,''),verified:false};await saveUsers();}}
         return send(200,publicState(await loadState(uid),aiEnvFor(uid)));
+      }
+
+      if(req.method==='POST'&&route==='/api/aitest'){
+        if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
+        const a=await readJson(req);
+        const cfg={apiKey:String(a.apiKey||'').trim(),model:String(a.model||'').trim(),baseUrl:String(a.baseUrl||'').trim().replace(/\/+$/,'')};
+        const testEnv={DEEPSEEK_API_KEY:cfg.apiKey,DEEPSEEK_MODEL:cfg.model||env.DEEPSEEK_MODEL||'deepseek-v4-pro',DEEPSEEK_BASE_URL:cfg.baseUrl||env.DEEPSEEK_BASE_URL||'https://napi.t.e0b.cc/v1'};
+        const result=await testAiConnectivity(testEnv,fetcher);
+        if(result.ok&&uid!=='local'){const u=users[uid];if(u){u.aiConfig={...cfg,verified:true};await saveUsers();}}
+        return send(200,result);
       }
 
       if(req.method==='POST'&&route==='/api/admin'){
@@ -120,10 +131,12 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
         try{
           if(route==='/api/reset'){if(a.gameId!==state.id||a.revision!==state.revision)fail('存档已更新，请刷新。',409);const ni=initial();ni.tokensUsed=state.tokensUsed||0;await persist(uid,ni);}
           else if(route==='/api/turn'){
+            if(!aiReady(uid))fail('请先配置并测试你自己的 AI 模型，通过连通性测试后方可游玩。',403);
             if((state.tokensUsed||0)+TURN_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完。',429);
             if(validateAction(state,a)){const result=await simulate(state,a,aiEnv,fetcher);const next=settle(state,a,result);if(a.mode==='ai')next.tokensUsed=(state.tokensUsed||0)+TURN_TOKEN_COST;await persist(uid,next);}
           }
           else if(route==='/api/chat'){
+            if(!aiReady(uid))fail('请先配置并测试你自己的 AI 模型，通过连通性测试后方可游玩。',403);
             if((state.tokensUsed||0)+CHAT_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完。',429);
             if(validateRequest(state,a)){const r=await chat(state,a.ministerId,a.message,aiEnv,fetcher);const next=applyChat(state,a,r);if(aiEnv.DEEPSEEK_API_KEY)next.tokensUsed=(state.tokensUsed||0)+CHAT_TOKEN_COST;await persist(uid,next);return send(200,{...publicState(next,aiEnv),reply:r.reply,relationDelta:r.relationDelta,loyaltyDelta:r.loyaltyDelta});}
           }

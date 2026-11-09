@@ -166,9 +166,11 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 
 ## 12. AI 配置（用户自配模型）
 
-- 每个用户可配置自己的 `{apiKey, model, baseUrl}`（存于账号 `aiConfig`），留空则回退服务器默认。
-- `/api/aiconfig`（`{apiKey, model, baseUrl}`）保存配置。
-- 有效 AI 环境按「用户配置优先、服务器 env 兜底」合并；`aiConfigured`/`aiModel`/`hasOwnAi` 随公开状态返回（密钥不回传前端）。
+- **线上服务不提供 AI 兜底**：每个用户必须配置自己的 `{apiKey, model, baseUrl}`（存于账号 `aiConfig`）；未配置或未通过连通性测试时无法游玩。
+- `/api/aitest`（`{apiKey, model, baseUrl}`）发起连通性测试（15 秒超时），成功后保存并标记 `verified:true`。
+- `/api/aiconfig`（`{apiKey, model, baseUrl}`）仅保存原始配置并置 `verified:false`（保存后须重新通过连通性测试）。
+- 游玩门槛：`/api/turn`、`/api/chat` 要求 `aiReady`（单机 `local` 用服务器 env 键；在线用户需自有密钥且 `verified`），否则返回 403；AI 响应超时返回 504。
+- `aiConfigured`/`aiVerified`/`aiModel`/`hasOwnAi` 随公开状态返回（密钥不回传前端）。
 
 ## 13. 多用户登录与会话
 
@@ -190,7 +192,8 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 | POST `/api/signup` | `{username, password}` | 注册，返回 `{token, ...公开状态}` |
 | POST `/api/login` | `{username, password}` | 登录，返回 `{token, ...公开状态}` |
 | POST `/api/logout` | — | 退出（带 Authorization） |
-| POST `/api/aiconfig` | `{apiKey, model, baseUrl}` | 保存用户 AI 配置 |
+| POST `/api/aiconfig` | `{apiKey, model, baseUrl}` | 保存用户 AI 配置（置未验证） |
+| POST `/api/aitest` | `{apiKey, model, baseUrl}` | 连通性测试，成功保存并标记已验证 |
 | POST `/api/turn` | `{gameId, revision, requestId, mode, policy?|decree?, orders?, eventChoice?, privyRelease?}` | 推进一季 |
 | POST `/api/chat` | `{gameId, revision, requestId, ministerId, message}` | 大臣对话，返回 + `reply/relationDelta/loyaltyDelta` |
 | POST `/api/office` | `{gameId, revision, requestId, action:create|appoint|dismiss|remove, title?, duty?, officeId?, ministerId?}` | 官职管理 |
@@ -198,7 +201,7 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 | POST `/api/rival` | `{gameId, revision, requestId, rivalId, action:围剿|招抚|议和|离间}` | 对敌行动 |
 | POST `/api/reset` | `{gameId, revision}` | 重新开始 |
 
-`GET /api/game` 返回：`{ state, aiConfigured, aiModel, hasOwnAi, authRequired, policies:[标签], duties:[户漕兵边工刑吏礼言], techTree, civicTree, event }`。
+`GET /api/game` 返回：`{ state, aiConfigured, aiVerified, aiModel, hasOwnAi, authRequired, policies:[标签], duties:[户漕兵边工刑吏礼言], techTree, civicTree, event }`。
 所有 POST 返回公开状态；错误返回 `{error}` 且 HTTP 非 2xx。
 
 ## 16. 数据文件
@@ -207,4 +210,4 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 
 ## 17. 测试
 
-`node --test`（45 项）：schema 校验（含钳制/跳过非法项）、季度/事件时机（春季大事 + 季节小事件 + 事件链 flags/variants）、动态财政（岁入随税赋/军费随兵力/欠饷蚀士气）、省份聚合、大臣命令、官职/将领、对立角色与对敌行动、科技解锁、内库发帑、意见册、辽东局势、AI 适配与限流、多用户注册/登录/隔离、HTTP 持久化/幂等/并发/重启。
+`node --test`（47 项）：schema 校验（含钳制/跳过非法项）、季度/事件时机（春季大事 + 季节小事件 + 事件链 flags/variants）、动态财政（岁入随税赋/军费随兵力/欠饷蚀士气）、省份聚合、大臣命令、官职/将领、对立角色与对敌行动、科技解锁、内库发帑、意见册、辽东局势、AI 适配与限流、多用户注册/登录/隔离、HTTP 持久化/幂等/并发/重启。
