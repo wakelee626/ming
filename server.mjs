@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {scryptSync,randomBytes,timingSafeEqual,randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {initial,validateAction,validateRequest,simulate,settle,chat,applyChat,applyOffice,applyArmy,applyRivalAction,fail,policies,officeDuties,eventForYear,techTree,civicTree,TOKEN_BUDGET,TURN_TOKEN_COST,CHAT_TOKEN_COST} from './engine.mjs';
+import {initial,validateAction,validateRequest,simulate,settle,chat,applyChat,applyOffice,applyArmy,applyRivalAction,fail,policies,officeDuties,eventForSeason,techTree,civicTree,TOKEN_BUDGET,TURN_TOKEN_COST,CHAT_TOKEN_COST} from './engine.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const MIME={html:'text/html; charset=utf-8',js:'text/javascript; charset=utf-8',css:'text/css; charset=utf-8',json:'application/json; charset=utf-8',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',svg:'image/svg+xml',ico:'image/x-icon',txt:'text/plain; charset=utf-8',woff2:'font/woff2'};
@@ -33,7 +33,7 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
   };
   const persist=async(uid,next)=>{states.set(uid,next);const f=path.join(savesDir,uid+'.json');await writeFile(f+'.tmp',JSON.stringify(next),'utf8');await rename(f+'.tmp',f)};
   const aiEnvFor=uid=>{const cfg=(uid&&uid!=='local'&&users[uid]?.aiConfig)||{};return{DEEPSEEK_API_KEY:cfg.apiKey||env.DEEPSEEK_API_KEY,DEEPSEEK_MODEL:cfg.model||env.DEEPSEEK_MODEL,DEEPSEEK_BASE_URL:cfg.baseUrl||env.DEEPSEEK_BASE_URL,_own:!!(uid&&uid!=='local'&&cfg.apiKey)}};
-  const publicState=(state,aiEnv=env)=>{const ev=eventForYear(state);return{state,aiConfigured:!!(aiEnv&&aiEnv.DEEPSEEK_API_KEY),aiModel:(aiEnv&&aiEnv.DEEPSEEK_MODEL)||null,hasOwnAi:!!(aiEnv&&aiEnv._own),authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
+  const publicState=(state,aiEnv=env)=>{const ev=eventForSeason(state);return{state,aiConfigured:!!(aiEnv&&aiEnv.DEEPSEEK_API_KEY),aiModel:(aiEnv&&aiEnv.DEEPSEEK_MODEL)||null,hasOwnAi:!!(aiEnv&&aiEnv._own),authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
   const readJson=async req=>{
     if(!req.headers['content-type']?.startsWith('application/json'))fail('需要 JSON 请求。',415);
     let raw='';for await(const part of req){raw+=part;if(Buffer.byteLength(raw)>16384)fail('请求过长。',413)}
@@ -118,9 +118,9 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
         const state=await loadState(uid);
         if(busy.has(uid))fail('当前奏折正在推演，请稍后重试。',409);busy.add(uid);
         try{
-          if(route==='/api/reset'){if(a.gameId!==state.id||a.revision!==state.revision)fail('存档已更新，请刷新。',409);await persist(uid,initial());}
+          if(route==='/api/reset'){if(a.gameId!==state.id||a.revision!==state.revision)fail('存档已更新，请刷新。',409);const ni=initial();ni.tokensUsed=state.tokensUsed||0;await persist(uid,ni);}
           else if(route==='/api/turn'){
-            if(a.mode==='ai'&&(state.tokensUsed||0)+TURN_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完，请改用规则模式或重新登基。',429);
+            if((state.tokensUsed||0)+TURN_TOKEN_COST>TOKEN_BUDGET)fail('本局 AI 推演额度已用完。',429);
             if(validateAction(state,a)){const result=await simulate(state,a,aiEnv,fetcher);const next=settle(state,a,result);if(a.mode==='ai')next.tokensUsed=(state.tokensUsed||0)+TURN_TOKEN_COST;await persist(uid,next);}
           }
           else if(route==='/api/chat'){

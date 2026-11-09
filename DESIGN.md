@@ -5,7 +5,7 @@
 
 ## 0. 设计原则
 
-- **AI 只是推演官**：所有 AI 输出经服务端 schema 校验与数值封顶；无密钥时走确定性规则 fallback，游戏可完整游玩。
+- **AI 只是推演官**：所有 AI 输出经服务端 schema 校验与数值封顶；需配置 DeepSeek 密钥方可游玩。
 - **确定性结算**：幂等（receipts + revision）、原子写盘（tmp + rename）。
 - **密钥永不下发前端**；AI 调用按 gameId 串行 + 每局 token 预算。
 - **多用户隔离**：登录后每个用户一套独立存档；会话持久化（重启不掉线）。
@@ -15,7 +15,7 @@
 
 - `turn` ∈ **0..67**（68 季 = 17 年）。每季一回合。
 - 年份 `year = 1628 + floor(turn/4)`；季节 `season = ['春','夏','秋','冬'][turn % 4]`。
-- **历史事件只在春季触发**（`turn % 4 === 0`），其余三季 `event === null`。
+- **春季触发年度历史大事**（`turn % 4 === 0`）；**夏秋冬三季触发季节小事件**（从 `minor-events.json` 按条件确定性选取），每季必有事件。
 - 结局判定：`turn === 68`（17 年结束），或民心/军备/朝局任一项 ≤ 0（提前亡国）。
 
 ## 2. State Schema
@@ -28,6 +28,7 @@ state = {
   pending: [ { text, delta:[4], due } ],                // 延迟事件（due 为季度序号）
   log: [ { year, season, decree, narrative, reactions:[], delta:[4], due:[], mode } ],
   counsel: [ { ministerId, year, season, message, reply } ],   // 意见册（进言记录，最近 200 条）
+  flags: [ string ],                                     // 事件链标记（抉择 sets / 小事件 requires|blocks）
   receipts: [], ending,
   ministers: [ Minister ], offices: [ Office ],
   provinces: [ Province ], armies: [ Army ], rivals: [ Rival ],
@@ -68,14 +69,17 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 
 明末最大问题是财政危机，财政数据贴合史实：
 
-- **岁入**：约 400 万两/年（田赋+盐课+关税）→ 每季 +100 万两（`TAX_INCOME`）。
-- **岁出**：约 1000 万两/年（九边军费 500 万 + 宗室俸禄 400 万 + 官员俸禄 100 万）→ 每季 -250 万两（`BASE_EXPENSE`）。
-- **财政赤字**：每季净 **-150 万两**，是游戏的核心压力源。
+- **岁入（动态）**：`taxIncome = round(Σ provinces.tax / 8)`（万两/季），随各省税赋浮动，初始约 99 万两/季。
+- **岁出（动态）**：军费 `militaryCost = round(Σ armies.men × 0.0005)`（随总兵力浮动，初始约 126 万两/季）；另宗室俸禄固定 100 万两/季、官员俸禄固定 25 万两/季。
+- **财政赤字**：每季净约 **-152 万两**（初始），随税赋与兵力变化，是游戏的核心压力源。
+- **欠饷侵蚀士气**：当国库低于本季军费（`militaryCost`）时，所有军队士气 -2。
 - **三饷加派**（AI 依圣旨推演，`LEVIES`）：辽饷（年 500 万两）、剿饷（年 280 万两）、练饷（年 730 万两），增收但激化民变、损民心。
 - **起始国库（太仓银）**：约 **600 万两**。
 - **内库（内帑）**：起始 200 万两，每季 +5 万两（皇庄/矿税/进贡），可发内帑救急。
 
-## 3. 政策（每季量级）
+## 3. 政策（12 项）
+
+> 政策数值（delta）仅为**设计参考**，AI 模式下**不直接结算**——服务器只把政策名作为圣旨交给 AI 推演（纯 AI 推演）。唯二确定性效果见下。
 
 | # | 政策 | 国库(万两) | 民心 | 军备 | 朝局 |
 |---|---|---|---|---|---|
@@ -85,8 +89,14 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 | 3 | 调和朝局 | -5 | +1 | -1 | +3 |
 | 4 | 商运筹饷 | +15 | +1 | -1 | -1 |
 | 5 | 招募屯田 | -10 | +2 | +2 | -1 |
+| 6 | 加派三饷 | +80 | -6 | +2 | -3 |
+| 7 | 裁撤驿站 | +15 | -3 | 0 | -2 |
+| 8 | 开海通商 | +25 | +2 | -1 | -2 |
+| 9 | 宗室禄米改革 | +30 | +1 | 0 | -4 |
+| 10 | 对清议和 | +20 | 0 | -4 | -5 |
+| 11 | 编练新军 | -40 | -1 | +6 | -1 |
 
-规则模式附带：整军备战 → 全军训练/装备 +1；招募屯田 → 全军兵力 +250；科技/市政进度 +6（按 `POLICY_TECH` 映射）。
+确定性效果（与 AI 推演并存）：整军备战 → 全军训练/装备 +1；招募屯田 → 全军兵力 +250。其余政策的数值效果全部由 AI 依圣旨推演。
 
 ## 4. 省份（16 区域）
 
@@ -97,26 +107,28 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 ## 5. 大臣与官职
 
 - 大臣 37 人（`data/ministers.json`），含忠臣/奸佞/边将/宦官/海商，属性：忠诚、关系、四维能力、性格、派系、年龄、威望、健康。
-- 官职动态自拟：席位上限 `6 + floor(朝局/20)`；设职耗 30 万两 + 朝局 -3。
+- 预置官职 15 席（首辅、内阁、六部尚书/侍郎、都察院、漕运、辽东/陕西巡抚等）；另有动态自拟：席位上限 `15 + floor(朝局/20)`；设职耗 30 万两 + 朝局 -3。
 - 三种交互：对话 `/api/chat`（回复同时记入意见册）、下达任务（随 `/api/turn` 的 `orders`）、任免官职 `/api/office`。
 
 ## 6. 军队与将领
 
-- 军队 11 支（`data/armies.json`），兵种：京营/边军/步兵/骑兵/水师；属性：兵力、士气、训练、装备、驻地、将领。
+- 军队 19 支（`data/armies.json`），兵种：京营/边军/步兵/骑兵/水师；属性：兵力、士气、训练、装备、驻地、将领。
 - 将领任命 `/api/army`（appoint/dismiss），将领须为存活大臣；有将领的军队每季训练 +1。
 - 政策影响（整军/屯田）、历史事件折损（松锦之战等）。
 
 ## 7. 科技树 + 市政树
 
 - 节点含 `tier/prereqs/cost/effects`，锁定→可用→已解锁三态；解锁须满足前置链。
-- 决策累积 `progress`（规则 +6/季，AI 可自由分配），达标且前置满足即解锁；解锁时 `effects`（国库万两/民心/军备/朝局）一次性生效。
+- 决策累积 `progress`（由 AI 推演分配），达标且前置满足即解锁；解锁时 `effects`（国库万两/民心/军备/朝局）一次性生效。
 - 科技树 34 节点、市政树 26 节点（`data/tech.json`、`data/civic.json`），延伸至未来科技。
 
-## 8. 历史事件时间线
+## 8. 事件系统（春季大事 + 季节小事件）
 
-`data/events.json`：13 件，按 `year`（1628–1644）在**春季**触发。
-每事件：`{ id, year, title, text, effects:{delta,provinces,frontier,armies,rivals}, choices:[{label,effects}] }`。
-基础效果 + 玩家抉择效果确定性结算；AI 模式将事件织入叙事（勿重复计入 delta）。
+- **春季历史大事** `data/events.json`：17 件，覆盖 1628–1644 每年一件，按 `year` 在春季触发。
+  每事件：`{ id, year, title, text, effects:{delta,provinces,frontier,armies,rivals}, choices:[{label,effects,sets?}], variants? }`。
+- **夏秋冬小事件** `data/minor-events.json`：27 件（夏 8 / 秋 9 / 冬 10），按 `season`（1=夏 2=秋 3=冬）、`weight`（加权随机）、`requires`（需含指定标记）、`blocks`（含指定标记则不触发）确定性选取，每季必有一件。
+- **多分支事件链**：玩家抉择 `sets` 写入 `state.flags`；后续事件经 `variants`（条件变体：`requires` 命中则改写文本/效果）或小事件 `requires`/`blocks` 形成分支。
+- 基础效果 + 玩家抉择效果确定性结算；AI 模式将事件织入叙事（勿重复计入 delta）。
 
 ## 9. 辽东局势（后金战线）
 
@@ -191,8 +203,8 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 
 ## 16. 数据文件
 
-`data/{policies,provinces,ministers,offices,armies,rivals,tech,civic,events,titles}.json`；运行时数据 `data/{save.json,saves/,users.json,sessions.json}`（不纳入版本管理）。
+`data/{policies,provinces,ministers,offices,armies,rivals,tech,civic,events,minor-events,titles}.json`；运行时数据 `data/{save.json,saves/,users.json,sessions.json}`（不纳入版本管理）。
 
 ## 17. 测试
 
-`node --test`（43 项）：schema 校验（含钳制/跳过非法项）、季度/事件时机、省份聚合、大臣命令、官职/将领、对立角色与对敌行动、科技解锁、内库发帑、意见册、辽东局势、AI 适配与限流、多用户注册/登录/隔离、HTTP 持久化/幂等/并发/重启。
+`node --test`（45 项）：schema 校验（含钳制/跳过非法项）、季度/事件时机（春季大事 + 季节小事件 + 事件链 flags/variants）、动态财政（岁入随税赋/军费随兵力/欠饷蚀士气）、省份聚合、大臣命令、官职/将领、对立角色与对敌行动、科技解锁、内库发帑、意见册、辽东局势、AI 适配与限流、多用户注册/登录/隔离、HTTP 持久化/幂等/并发/重启。

@@ -1,8 +1,17 @@
 [
   {"id":"shoufu","title":"首辅","duty":"吏","mod":{"stat":"court","value":3},"holder":null},
+  {"id":"neige","title":"内阁大学士","duty":"吏","mod":{"stat":"court","value":2},"holder":null},
   {"id":"hubu","title":"户部尚书","duty":"户","mod":{"stat":"treasury","value":4},"holder":null},
+  {"id":"hubu-shilang","title":"户部侍郎","duty":"户","mod":{"stat":"treasury","value":2},"holder":null},
   {"id":"bingbu","title":"兵部尚书","duty":"兵","mod":{"stat":"garrison","value":3},"holder":null},
+  {"id":"bingbu-shilang","title":"兵部侍郎","duty":"兵","mod":{"stat":"garrison","value":2},"holder":null},
   {"id":"gongbu","title":"工部尚书","duty":"工","mod":{"stat":"popular","value":2},"holder":null},
   {"id":"libu","title":"吏部尚书","duty":"吏","mod":{"stat":"court","value":2},"holder":null},
-  {"id":"liaodongdushi","title":"辽东督师","duty":"边","mod":{"stat":"garrison","value":3},"holder":null}
+  {"id":"libu-shangshu","title":"礼部尚书","duty":"礼","mod":{"stat":"court","value":2},"holder":null},
+  {"id":"xingbu","title":"刑部尚书","duty":"刑","mod":{"stat":"popular","value":2},"holder":null},
+  {"id":"duchayuan","title":"都察院左都御史","duty":"言","mod":{"stat":"court","value":2},"holder":null},
+  {"id":"caoyun","title":"漕运总督","duty":"漕","mod":{"stat":"treasury","value":3},"holder":null},
+  {"id":"liaodongdushi","title":"辽东督师","duty":"边","mod":{"stat":"garrison","value":3},"holder":null},
+  {"id":"liaodong-xunfu","title":"辽东巡抚","duty":"边","mod":{"stat":"garrison","value":2},"holder":null},
+  {"id":"shaanxi-xunfu","title":"陕西巡抚","duty":"边","mod":{"stat":"garrison","value":2},"holder":null}
 ]
