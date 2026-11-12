@@ -1,0 +1,560 @@
+{
+  "version": 1,
+  "units": {
+    "shield": {
+      "name": "刀盾兵",
+      "role": "近战接敌 · 掩护阵线",
+      "equipment": "腰刀、藤牌、棉甲",
+      "image": "/scenes/units/shield.png"
+    },
+    "pike": {
+      "name": "长枪兵",
+      "role": "列阵拒马 · 固守要冲",
+      "equipment": "长枪、铁盔、布面甲",
+      "image": "/scenes/units/pike.png"
+    },
+    "musket": {
+      "name": "鸟铳兵",
+      "role": "轮番齐射 · 远程压制",
+      "equipment": "鸟铳、火药、铅弹",
+      "image": "/scenes/units/musket.png"
+    },
+    "artillery": {
+      "name": "火炮兵",
+      "role": "攻城守隘 · 重火支援",
+      "equipment": "火炮、炮车、弹药",
+      "image": "/scenes/units/artillery.png"
+    },
+    "cavalry": {
+      "name": "骑兵",
+      "role": "机动突击 · 侦察追击",
+      "equipment": "战马、长矛、马刀",
+      "image": "/scenes/units/cavalry.png"
+    },
+    "naval": {
+      "name": "水兵",
+      "role": "操舟巡防 · 接舷作战",
+      "equipment": "战船、钩索、腰刀",
+      "image": "/scenes/units/naval.png"
+    },
+    "rocket": {
+      "name": "火箭兵",
+      "role": "神机火箭 · 齐射破敌",
+      "equipment": "神机火箭、发射架、火药",
+      "image": "/scenes/units/rocket.png",
+      "requires": "gun-cannon"
+    },
+    "dragoon": {
+      "name": "龙骑兵",
+      "role": "骑马机动 · 下马齐射",
+      "equipment": "火铳、战马、马刀",
+      "image": "/scenes/units/dragoon.png",
+      "requires": "gun-musket"
+    },
+    "grenadier": {
+      "name": "掷弹兵",
+      "role": "破阵攻坚 · 投掷爆破",
+      "equipment": "手雷、腰刀、铁甲",
+      "image": "/scenes/units/grenadier.png",
+      "requires": "gun-breech"
+    },
+    "ironclad": {
+      "name": "铁甲水兵",
+      "role": "铁甲战舰 · 海疆争锋",
+      "equipment": "蒸汽铁甲舰、舰炮、锚链",
+      "image": "/scenes/units/ironclad.png",
+      "requires": "steam-warship"
+    },
+    "aircorps": {
+      "name": "气球侦察兵",
+      "role": "升空瞭望 · 洞悉敌情",
+      "equipment": "热气球、望远镜、信号旗",
+      "image": "/scenes/units/aircorps.png",
+      "requires": "air-balloon"
+    },
+    "machinegunner": {
+      "name": "机关枪手",
+      "role": "连发扫射 · 压制集群",
+      "equipment": "机关枪、弹药箱、护具",
+      "image": "/scenes/units/machinegunner.png",
+      "requires": "gun-machine"
+    }
+  },
+  "armies": {
+    "jingying": {
+      "image": "/scenes/armies/jingying.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 25
+        },
+        {
+          "unitId": "pike",
+          "weight": 25
+        },
+        {
+          "unitId": "musket",
+          "weight": 30
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 10
+        },
+        {
+          "unitId": "rocket",
+          "weight": 8
+        },
+        {
+          "unitId": "grenadier",
+          "weight": 8
+        },
+        {
+          "unitId": "aircorps",
+          "weight": 5
+        },
+        {
+          "unitId": "machinegunner",
+          "weight": 8
+        }
+      ]
+    },
+    "liaodong-jun": {
+      "image": "/scenes/armies/liaodong-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 20
+        },
+        {
+          "unitId": "pike",
+          "weight": 25
+        },
+        {
+          "unitId": "musket",
+          "weight": 25
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 20
+        }
+      ]
+    },
+    "guanning-tieqi": {
+      "image": "/scenes/armies/guanning-tieqi.png",
+      "composition": [
+        {
+          "unitId": "musket",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 90
+        },
+        {
+          "unitId": "dragoon",
+          "weight": 15
+        }
+      ]
+    },
+    "jizhen-jun": {
+      "image": "/scenes/armies/jizhen-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 20
+        },
+        {
+          "unitId": "pike",
+          "weight": 30
+        },
+        {
+          "unitId": "musket",
+          "weight": 25
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 15
+        }
+      ]
+    },
+    "xuanda-jun": {
+      "image": "/scenes/armies/xuanda-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 15
+        },
+        {
+          "unitId": "pike",
+          "weight": 25
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 30
+        }
+      ]
+    },
+    "datong-jun": {
+      "image": "/scenes/armies/datong-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 20
+        },
+        {
+          "unitId": "pike",
+          "weight": 25
+        },
+        {
+          "unitId": "musket",
+          "weight": 25
+        },
+        {
+          "unitId": "artillery",
+          "weight": 15
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 15
+        },
+        {
+          "unitId": "rocket",
+          "weight": 10
+        }
+      ]
+    },
+    "taiyuan-jun": {
+      "image": "/scenes/armies/taiyuan-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 30
+        },
+        {
+          "unitId": "pike",
+          "weight": 30
+        },
+        {
+          "unitId": "musket",
+          "weight": 25
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 5
+        }
+      ]
+    },
+    "ningxia-jun": {
+      "image": "/scenes/armies/ningxia-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 15
+        },
+        {
+          "unitId": "pike",
+          "weight": 25
+        },
+        {
+          "unitId": "musket",
+          "weight": 15
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 35
+        },
+        {
+          "unitId": "dragoon",
+          "weight": 12
+        }
+      ]
+    },
+    "guyuan-jun": {
+      "image": "/scenes/armies/guyuan-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 25
+        },
+        {
+          "unitId": "pike",
+          "weight": 30
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 15
+        }
+      ]
+    },
+    "yansui-jun": {
+      "image": "/scenes/armies/yansui-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 20
+        },
+        {
+          "unitId": "pike",
+          "weight": 25
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 5
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 30
+        }
+      ]
+    },
+    "shaanxi-jun": {
+      "image": "/scenes/armies/shaanxi-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 30
+        },
+        {
+          "unitId": "pike",
+          "weight": 30
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 5
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 15
+        }
+      ]
+    },
+    "tianxiong-jun": {
+      "image": "/scenes/armies/tianxiong-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 20
+        },
+        {
+          "unitId": "pike",
+          "weight": 40
+        },
+        {
+          "unitId": "musket",
+          "weight": 30
+        },
+        {
+          "unitId": "artillery",
+          "weight": 5
+        },
+        {
+          "unitId": "cavalry",
+          "weight": 5
+        }
+      ]
+    },
+    "zhejiang-shuishi": {
+      "image": "/scenes/armies/zhejiang-shuishi.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 10
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 15
+        },
+        {
+          "unitId": "naval",
+          "weight": 55
+        },
+        {
+          "unitId": "ironclad",
+          "weight": 15
+        }
+      ]
+    },
+    "fujian-shuishi": {
+      "image": "/scenes/armies/fujian-shuishi.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 10
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 20
+        },
+        {
+          "unitId": "naval",
+          "weight": 50
+        },
+        {
+          "unitId": "ironclad",
+          "weight": 15
+        }
+      ]
+    },
+    "dengzhou-shuishi": {
+      "image": "/scenes/armies/dengzhou-shuishi.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 10
+        },
+        {
+          "unitId": "pike",
+          "weight": 5
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 25
+        },
+        {
+          "unitId": "naval",
+          "weight": 40
+        }
+      ]
+    },
+    "guangdong-shuishi": {
+      "image": "/scenes/armies/guangdong-shuishi.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 15
+        },
+        {
+          "unitId": "musket",
+          "weight": 15
+        },
+        {
+          "unitId": "artillery",
+          "weight": 15
+        },
+        {
+          "unitId": "naval",
+          "weight": 55
+        }
+      ]
+    },
+    "chuan-jun": {
+      "image": "/scenes/armies/chuan-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 25
+        },
+        {
+          "unitId": "pike",
+          "weight": 50
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 5
+        }
+      ]
+    },
+    "huguang-jun": {
+      "image": "/scenes/armies/huguang-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 35
+        },
+        {
+          "unitId": "pike",
+          "weight": 35
+        },
+        {
+          "unitId": "musket",
+          "weight": 20
+        },
+        {
+          "unitId": "artillery",
+          "weight": 10
+        }
+      ]
+    },
+    "shandong-jun": {
+      "image": "/scenes/armies/shandong-jun.png",
+      "composition": [
+        {
+          "unitId": "shield",
+          "weight": 25
+        },
+        {
+          "unitId": "pike",
+          "weight": 30
+        },
+        {
+          "unitId": "musket",
+          "weight": 30
+        },
+        {
+          "unitId": "artillery",
+          "weight": 15
+        }
+      ]
+    }
+  }
+}

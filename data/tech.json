@@ -189,6 +189,10 @@
   "prereqs": [
    "steam-engine"
   ],
+  "hidden": true,
+  "reveal": {
+   "tech": "sea-fleet"
+  },
   "cost": 70,
   "effects": {
    "garrison": 4,
@@ -229,6 +233,10 @@
   "prereqs": [
    "textile-factory"
   ],
+  "hidden": true,
+  "reveal": {
+   "tech": "iron-standard"
+  },
   "cost": 75,
   "effects": {
    "treasury": 60
@@ -270,6 +278,10 @@
   "prereqs": [
    "elec-magnet"
   ],
+  "hidden": true,
+  "reveal": {
+   "tech": "print-press"
+  },
   "cost": 75,
   "effects": {
    "treasury": 30,
@@ -311,6 +323,10 @@
   "prereqs": [
    "gun-breech"
   ],
+  "hidden": true,
+  "reveal": {
+   "flag": "resist-qing"
+  },
   "cost": 85,
   "effects": {
    "garrison": 5
@@ -336,6 +352,10 @@
   "name": "热气球",
   "tier": 4,
   "prereqs": [],
+  "hidden": true,
+  "reveal": {
+   "tech": "gun-cannon"
+  },
   "cost": 70,
   "effects": {
    "garrison": 2
@@ -363,6 +383,10 @@
   "prereqs": [
    "air-airship"
   ],
+  "hidden": true,
+  "reveal": {
+   "flag": "northern-expedition"
+  },
   "cost": 95,
   "effects": {
    "garrison": 5
@@ -387,6 +411,10 @@
   "prereqs": [
    "med-vaccine"
   ],
+  "hidden": true,
+  "reveal": {
+   "tech": "print-type"
+  },
   "cost": 65,
   "effects": {
    "popular": 3

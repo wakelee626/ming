@@ -331,6 +331,10 @@
   "prereqs": [
    "gov-constitution"
   ],
+  "hidden": true,
+  "reveal": {
+   "civic": "gov-cabinet"
+  },
   "cost": 95,
   "effects": {
    "popular": 4,

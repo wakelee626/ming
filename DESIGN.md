@@ -26,9 +26,11 @@ state = {
   stats: [国库, 民心, 军备, 朝局],                        // 国库=万两(无上限)，后三项 0–100
   title, story, summary,
   pending: [ { text, delta:[4], due } ],                // 延迟事件（due 为季度序号）
-  log: [ { year, season, decree, narrative, reactions:[], delta:[4], due:[], mode } ],
+  log: [ { year, season, decree, decreeText, narrative, reactions:[], delta:[4], due:[], mode } ],
   counsel: [ { ministerId, year, season, message, reply } ],   // 意见册（进言记录，最近 200 条）
   flags: [ string ],                                     // 事件链标记（抉择 sets / 小事件 requires|blocks）
+  activePolicies: [ { index, label, enacted:{turn,year,season} } ],  // 现行国策（持久，可废除）
+  assignments: [ { ministerId, task, since:{turn,year,season} } ],    // 现行差遣（大臣长期任务，持久，可召回）
   receipts: [], ending,
   ministers: [ Minister ], offices: [ Office ],
   provinces: [ Province ], armies: [ Army ], rivals: [ Rival ],
@@ -36,6 +38,8 @@ state = {
   civic: { unlocked:[id], progress:{ id:0..100 } },
   frontier: { manchu, relations },                      // 辽东局势
   privy: 万两,                                           // 内库（皇帝私帑）
+  exam:   { nextTurn, candidates:[候选士子], recruited:[id], heldTurn },  // 科举（殿试取士）
+  factions: [ { id, name, power } ],                     // 朝堂派系势力（内部，驱动党争事件）
   tokensUsed,
 }
 
@@ -79,7 +83,7 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 
 ## 3. 政策（12 项）
 
-> 政策数值（delta）仅为**设计参考**，AI 模式下**不直接结算**——服务器只把政策名作为圣旨交给 AI 推演（纯 AI 推演）。唯二确定性效果见下。
+> 政策数值（delta）仅为**设计参考**，AI 模式下**不逐回合直接结算**——每回合把「现行国策」与新指定国策、圣旨一并交给 AI 推演（AI 持续推演）。唯二确定性效果见下（指定时一次性生效）。
 
 | # | 政策 | 国库(万两) | 民心 | 军备 | 朝局 |
 |---|---|---|---|---|---|
@@ -98,6 +102,13 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 
 确定性效果（与 AI 推演并存）：整军备战 → 全军训练/装备 +1；招募屯田 → 全军兵力 +250。其余政策的数值效果全部由 AI 依圣旨推演。
 
+### 现行国策（持久化）
+
+- 玩家每回合可「指定」一项国策（与自由圣旨并存），加入 `activePolicies`，持续生效直到「废除」。
+- 废除经 `POST /api/policy`（`{action:'abolish', policyIndex}`）即时移除，不推进季节。
+- 每回合推演把 `activePolicies` 与当回合新指定国策 `policy`、圣旨 `decree` 一并上报 AI，由 AI 在 delta 与叙事中体现持续影响（服务器不逐回合按 delta 结算）。
+- 整军备战 / 招募屯田 的确定性效果在**指定时一次性**生效。
+
 ## 4. 省份（16 区域）
 
 两京十三省 + 辽东：`beizhili, nanzhili, shandong, shanxi, henan, shaanxi, sichuan, huguang, jiangxi, zhejiang, fujian, guangdong, guangxi, yunnan, guizhou, liaodong`。
@@ -109,6 +120,7 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 - 大臣 37 人（`data/ministers.json`），含忠臣/奸佞/边将/宦官/海商，属性：忠诚、关系、四维能力、性格、派系、年龄、威望、健康。
 - 预置官职 15 席（首辅、内阁、六部尚书/侍郎、都察院、漕运、辽东/陕西巡抚等）；另有动态自拟：席位上限 `15 + floor(朝局/20)`；设职耗 30 万两 + 朝局 -3。
 - 三种交互：对话 `/api/chat`（回复同时记入意见册）、下达任务（随 `/api/turn` 的 `orders`）、任免官职 `/api/office`。
+- 另有「长期差遣」`/api/assignment`（`assign`/`recall`）：指派大臣长期任务，持久生效、每回合随上下文上报 AI 持续推演（纯 AI 推演，无确定性数值），召回或大臣病故即止；与一次性 `orders` 并存。
 
 ## 6. 军队与将领
 
@@ -121,13 +133,15 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 - 节点含 `tier/prereqs/cost/effects`，锁定→可用→已解锁三态；解锁须满足前置链。
 - 决策累积 `progress`（由 AI 推演分配），达标且前置满足即解锁；解锁时 `effects`（国库万两/民心/军备/朝局）一次性生效。
 - 科技树 34 节点、市政树 26 节点（`data/tech.json`、`data/civic.json`），延伸至未来科技。
+- **隐藏节点（8 个）**：部分节点带 `hidden:true` 与 `reveal`，`reveal` 取 `{tech:id}`（前置科技已解锁）、`{civic:id}`（前置市政已解锁）或 `{flag:标记}`（抉择标记已写入 `flags`）三者之一。未现形前：界面不展示、服务端跳过其 AI 进度/解锁、也不会自动解锁；一旦满足 `reveal` 即现形，此后与普通节点一致。现形时机早于解锁（跨分支/更早节点/抉择标记），形成「秘密科技」的探明体验。
 
-## 8. 事件系统（春季大事 + 季节小事件）
+## 8. 事件系统（春季大事 + 季节小事件 + 条件突发）
 
 - **春季历史大事** `data/events.json`：17 件，覆盖 1628–1644 每年一件，按 `year` 在春季触发。
   每事件：`{ id, year, title, text, effects:{delta,provinces,frontier,armies,rivals}, choices:[{label,effects,sets?}], variants? }`。
 - **夏秋冬小事件** `data/minor-events.json`：27 件（夏 8 / 秋 9 / 冬 10），按 `season`（1=夏 2=秋 3=冬）、`weight`（加权随机）、`requires`（需含指定标记）、`blocks`（含指定标记则不触发）确定性选取，每季必有一件。
-- **多分支事件链**：玩家抉择 `sets` 写入 `state.flags`；后续事件经 `variants`（条件变体：`requires` 命中则改写文本/效果）或小事件 `requires`/`blocks` 形成分支。
+- **条件突发事件** `data/trigger-events.json`：14 件阈值触发 + 2 条跨季事件链（辽东战局、流寇起事，各 3 步）。每季在季节事件之外、按数据顺序确定性判定，至多额外触发一件：`condition` 支持 `stats`（treasury/popular/garrison/court 的 lt/lte/gt/gte）、`frontier`（manchu/relations）、`rivals`（strength/ambition/relation/alive）、`factions`（按派系 id 的 power 阈值 lt/lte/gt/gte，驱动党争事件）与 `flags`/`flagsNot`；命中即结算基础 `effects` 与玩家 `choices`（经 `/api/turn` 的 `trigChoice`），并把 `trig:<id>` 与顶层 `sets` 写入 `state.flags`。每件突发只触发一次（由 `trig:<id>` 标记防重）。事件的 `effects.factions` 可对派系势力增减（`{id, power}`）。
+- **多分支事件链**：玩家抉择 `sets` 写入 `state.flags`；后续事件经 `variants`（条件变体：`requires` 命中则改写文本/效果）或小事件 `requires`/`blocks` 形成分支；突发事件链经顶层 `sets` 逐季推进（如 `liaodong:1 → liaodong:2 → liaodong:done`），每季推进一步。
 - 基础效果 + 玩家抉择效果确定性结算；AI 模式将事件织入叙事（勿重复计入 delta）。
 
 ## 9. 辽东局势（后金战线）
@@ -159,10 +173,10 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 ## 11. AI 推演
 
 - **网关**：`DEEPSEEK_BASE_URL`（默认 `https://napi.t.e0b.cc/v1`，第三方网关）；模型默认 `deepseek-v4-pro`（`deepseek-v4-flash` 无权限）。
-- 主回合 `/api/turn`：AI 返回富 JSON（title/narrative/summary/delta/reactions/delayed/provinces/ministers/tech/civic）。
-- **健壮校验**（推理模型输出偶有偏差，不整回合 502）：核心 delta 钳制（delta[0] ±200、delta[1..3] ±18 且总和缩放至 ≤18）；省份/大臣条目跳过非法项（未知 id、越界值）；`delayed` 缺省为空数组；标题/叙事/纪要长度与 reactions 仍严格校验。
+- 主回合 `/api/turn`：AI 返回富 JSON（title/narrative/summary/delta/reactions/delayed/provinces/ministers/armies/rivals/frontier/tech/civic）。
+- **健壮校验**（推理模型输出偶有偏差，不整回合 502）：核心 delta 钳制（delta[0] ±200、delta[1..3] ±18 且总和缩放至 ≤18）；省份/大臣/军队/对立角色条目跳过非法项（未知 id、越界值）；`delayed` 缺省为空数组；标题/叙事/纪要长度与 reactions 仍严格校验。大臣 loyalty/relation/health/prestige ±15（health 归零即病故，并腾出其官职与将领）；军队 men ±500、morale/training/equipment ±15；对立角色 strength/ambition/relation ±15；frontier manchu/relations ±15。
 - 对话 `/api/chat`：返回 reply（≤240 字）+ loyaltyDelta/relationDelta（±10）；超时 60 秒。
-- 上下文发送：省份、大臣（含四维）、军队、对立角色、内库、辽东、科技市政、延迟事件、历史事件。
+- 上下文发送：省份、大臣（含四维、健康、威望、年龄、关系）、军队（含将领与编制）、对立角色、内库、辽东、科技市政、延迟事件、历史事件。
 
 ## 12. AI 配置（用户自配模型）
 
@@ -194,20 +208,50 @@ Rival    = { id, name, title, side, strength, ambition, relation, influence, tra
 | POST `/api/logout` | — | 退出（带 Authorization） |
 | POST `/api/aiconfig` | `{apiKey, model, baseUrl}` | 保存用户 AI 配置（置未验证） |
 | POST `/api/aitest` | `{apiKey, model, baseUrl}` | 连通性测试，成功保存并标记已验证 |
-| POST `/api/turn` | `{gameId, revision, requestId, mode, policy?|decree?, orders?, eventChoice?, privyRelease?}` | 推进一季 |
+| POST `/api/turn` | `{gameId, revision, requestId, mode, policy?|decree?, orders?, eventChoice?, trigChoice?, privyRelease?}` | 推进一季 |
 | POST `/api/chat` | `{gameId, revision, requestId, ministerId, message}` | 大臣对话，返回 + `reply/relationDelta/loyaltyDelta` |
 | POST `/api/office` | `{gameId, revision, requestId, action:create|appoint|dismiss|remove, title?, duty?, officeId?, ministerId?}` | 官职管理 |
 | POST `/api/army` | `{gameId, revision, requestId, action:appoint|dismiss, armyId, ministerId?}` | 军队将领 |
 | POST `/api/rival` | `{gameId, revision, requestId, rivalId, action:围剿|招抚|议和|离间}` | 对敌行动 |
+| POST `/api/assignment` | `{gameId, revision, requestId, action:assign|recall, ministerId, task?}` | 大臣长期差遣 |
+| POST `/api/exam` | `{gameId, revision, requestId, action:hold|recruit, candidateId?}` | 科举（开科/录用士子） |
 | POST `/api/reset` | `{gameId, revision}` | 重新开始 |
 
-`GET /api/game` 返回：`{ state, aiConfigured, aiVerified, aiModel, hasOwnAi, authRequired, policies:[标签], duties:[户漕兵边工刑吏礼言], techTree, civicTree, event }`。
+`GET /api/game` 返回：`{ state, aiConfigured, aiVerified, aiModel, hasOwnAi, authRequired, policies:[标签], duties:[户漕兵边工刑吏礼言], techTree, civicTree, event, triggerEvent }`。
 所有 POST 返回公开状态；错误返回 `{error}` 且 HTTP 非 2xx。
 
 ## 16. 数据文件
 
-`data/{policies,provinces,ministers,offices,armies,rivals,tech,civic,events,minor-events,titles}.json`；运行时数据 `data/{save.json,saves/,users.json,sessions.json}`（不纳入版本管理）。
+`data/{policies,provinces,ministers,offices,armies,rivals,tech,civic,events,minor-events,trigger-events,exam-candidates,titles}.json`；运行时数据 `data/{save.json,saves/,users.json,sessions.json}`（不纳入版本管理）。
 
 ## 17. 测试
 
-`node --test`（47 项）：schema 校验（含钳制/跳过非法项）、季度/事件时机（春季大事 + 季节小事件 + 事件链 flags/variants）、动态财政（岁入随税赋/军费随兵力/欠饷蚀士气）、省份聚合、大臣命令、官职/将领、对立角色与对敌行动、科技解锁、内库发帑、意见册、辽东局势、AI 适配与限流、多用户注册/登录/隔离、HTTP 持久化/幂等/并发/重启。
+`node --test`（83 项）：schema 校验（含钳制/跳过非法项，军队 men±500、士气训练装备±15，大臣四维±15 且 health 归零病故，对立角色±15，辽东±15）、季度/事件时机（春季大事 + 季节小事件 + 事件链 flags/variants + 条件突发阈值/防重/跨季链推进/突发抉择/公开状态）、动态财政（岁入随税赋/军费随兵力/欠饷蚀士气）、省份聚合、大臣命令、官职/将领、现行国策持久化与废除、长期差遣持久化与召回、对立角色与对敌行动、科技解锁、隐藏科技现形与解锁（tech/civic/flag 三种 reveal）、隐藏兵种数据完整性、内库发帑、意见册、辽东局势、科举开科与录用（费用/朝局/确定性候选/派系势力）、朝堂党争（派系势力初值/官职任免升降/阈值事件触发与结算）、AI 适配与限流、多用户注册/登录/隔离、HTTP 持久化/幂等/并发/重启。
+
+## 18. 科举取士与朝堂党争
+
+### 科举（殿试取士）
+
+- `state.exam = { nextTurn, candidates, recruited, heldTurn }`；开局 `nextTurn=4`（崇祯二年开科）。
+- `data/exam-candidates.json`：12 位史实士子（范景文、文震孟、瞿式耜、侯恂、杨嗣昌、陈子龙、黄宗羲、顾炎武、方以智、张溥、李邦华、吴甡），字段 `id/name/style/faction/loyalty/ability/trait/bio/age/prestige`。
+- `POST /api/exam`：
+  - `hold`（开科）：须 `turn ≥ nextTurn`；耗 40 万两；全体存活大臣 loyalty +1（朝局随之 +1）；按 `turn` 种子确定性抽取 2 名未被录用过的士子为候选；`heldTurn=当前turn`、`nextTurn += 4`。
+  - `recruit`（录用）：`candidateId` 须在当前候选中；耗 20 万两；把该士子转为存活大臣（`office=null`、`alive=true`、`relation=50`、`health=72`），移出候选并记入 `recruited`；其派系势力 +8。
+- 候选在下次开科前保留，再次开科即被替换；`recruited` 防止重复录用。
+
+### 朝堂党争（派系势力）
+
+- `state.factions`：7 派系（东林/阉党/楚党/中立/边将/宦官/海商），`power = round(Σ 该派存活大臣 prestige / 10)` 开局计算，随任免/科举/事件增减，钳制 0–100。
+- **势力条不对外展示**：派系势力是内部量，仅通过党争事件与叙事体现，不出现在界面。
+- 官职任免 `/api/office`：`appoint` 使卸任者派系 -10、新任者派系 +10；`dismiss`/`remove` 使卸任者派系 -10。
+- 事件 `effects.factions`（`{id, power}`）增减派系势力；条件 `condition.factions`（按派系 id 的 power 阈值）触发党争突发事件（如「阉党专权」「东林清议」，阈值 70）。
+
+## 兵种编制与图鉴（界面扩展）
+
+`data/army-composition.json` 是 19 支部队的架空游戏编制定义，不代表历史考据编制。每军有独立场景图，兵种图鉴包括刀盾兵、长枪兵、鸟铳兵、火炮兵、骑兵、水兵（基准 6 兵种）。各军仅展示其编制包含的兵种。
+
+- `armyCatalog.armies[id].composition` 指定兵种权重，基准 6 兵种合计 100；`units` 提供名称、职能、装备描述与图片。
+- **隐藏兵种（6 个）**：`units` 中带 `requires:<科技id>` 的兵种（火箭兵→红衣大炮、龙骑兵→新式火铳、掷弹兵→后膛枪、铁甲水兵→蒸汽战舰、气球侦察兵→热气球、机关枪手→机关枪）为隐藏兵种，叠加于所属军队编制之上。仅当对应科技已解锁时才计入该军折算；解锁前自动过滤、其余兵种按原比例折算，解锁后按其权重并入、其余兵种占比相应稀释。隐藏兵种同样仅为编制展示。
+- 总兵力仍以存档 `Army.men` 为权威。兵种人数由最大余数法折算为整数，合计严格等于当前总兵力；零兵力也保持一致。
+- 这是编制展示，不引入独立兵种战斗结算、招募或损耗池。现有军费、战斗及旧存档兼容性保持不变。
+- `/api/game` 及变更响应随附 `armyCatalog`。部队图片位于 `dist/scenes/armies/`，兵种图片位于 `dist/scenes/units/`，均为 AI 生成的游戏示意图。

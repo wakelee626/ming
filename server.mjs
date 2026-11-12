@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {scryptSync,randomBytes,timingSafeEqual,randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {initial,validateAction,validateRequest,simulate,settle,chat,applyChat,applyOffice,applyArmy,applyRivalAction,testAiConnectivity,fail,policies,officeDuties,eventForSeason,techTree,civicTree,TOKEN_BUDGET,TURN_TOKEN_COST,CHAT_TOKEN_COST} from './engine.mjs';
+import {initial,validateAction,validateRequest,simulate,settle,chat,applyChat,applyOffice,applyArmy,applyRivalAction,applyPolicy,applyAssignment,applyExam,initialFactions,testAiConnectivity,fail,policies,officeDuties,eventForSeason,triggeredEvent,techTree,civicTree,TOKEN_BUDGET,TURN_TOKEN_COST,CHAT_TOKEN_COST,armyCatalog} from './engine.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const MIME={html:'text/html; charset=utf-8',js:'text/javascript; charset=utf-8',css:'text/css; charset=utf-8',json:'application/json; charset=utf-8',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',svg:'image/svg+xml',ico:'image/x-icon',txt:'text/plain; charset=utf-8',woff2:'font/woff2'};
@@ -26,15 +26,22 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
   const verifyPw=(pw,salt,hash)=>{try{return timingSafeEqual(Buffer.from(hash,'hex'),scryptSync(pw,salt,64))}catch{return false}};
   const loadState=async uid=>{
     if(!states.has(uid)){
-      try{states.set(uid,JSON.parse(await readFile(path.join(savesDir,uid+'.json'),'utf8')))}
-      catch{states.set(uid,initial())}
+      let st;
+      try{st=JSON.parse(await readFile(path.join(savesDir,uid+'.json'),'utf8'))}catch{st=initial()}
+      if(!Array.isArray(st.activePolicies))st.activePolicies=[];
+      if(!Array.isArray(st.assignments))st.assignments=[];
+      if(!st.exam)st.exam={nextTurn:4,candidates:[],recruited:[],heldTurn:null};
+      if(!Array.isArray(st.exam.candidates))st.exam.candidates=[];
+      if(!Array.isArray(st.exam.recruited))st.exam.recruited=[];
+      if(!Array.isArray(st.factions))st.factions=initialFactions(st.ministers);
+      states.set(uid,st);
     }
     return states.get(uid);
   };
   const persist=async(uid,next)=>{states.set(uid,next);const f=path.join(savesDir,uid+'.json');await writeFile(f+'.tmp',JSON.stringify(next),'utf8');await rename(f+'.tmp',f)};
   const aiEnvFor=uid=>{const isLocal=uid==='local';const cfg=(uid&&!isLocal&&users[uid]?.aiConfig)||{};return{DEEPSEEK_API_KEY:cfg.apiKey||(isLocal?env.DEEPSEEK_API_KEY:''),DEEPSEEK_MODEL:cfg.model||env.DEEPSEEK_MODEL||'deepseek-v4-pro',DEEPSEEK_BASE_URL:(cfg.baseUrl||'').replace(/\/+$/,'')||env.DEEPSEEK_BASE_URL||'https://napi.t.e0b.cc/v1',_own:!!cfg.apiKey,_verified:!!(cfg.apiKey&&cfg.verified)}};
   const aiReady=uid=>{const e=aiEnvFor(uid);return !!(e.DEEPSEEK_API_KEY&&(uid==='local'||e._verified))};
-  const publicState=(state,aiEnv=env)=>{const ev=eventForSeason(state);return{state,aiConfigured:!!(aiEnv&&aiEnv.DEEPSEEK_API_KEY),aiVerified:!!(aiEnv&&aiEnv._verified),aiModel:(aiEnv&&aiEnv.DEEPSEEK_MODEL)||null,hasOwnAi:!!(aiEnv&&aiEnv._own),authRequired:requireAuth,policies:policies.map(p=>p.label),duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null}};
+  const publicState=(state,aiEnv=env)=>{const ev=eventForSeason(state),tr=triggeredEvent(state);return{state,armyCatalog,aiConfigured:!!(aiEnv&&aiEnv.DEEPSEEK_API_KEY),aiVerified:!!(aiEnv&&aiEnv._verified),aiModel:(aiEnv&&aiEnv.DEEPSEEK_MODEL)||null,hasOwnAi:!!(aiEnv&&aiEnv._own),authRequired:requireAuth,policies:policies.map(p=>p.label),policyOptions:policies,duties:officeDuties,techTree,civicTree,event:ev?{id:ev.id,year:ev.year,title:ev.title,text:ev.text,choices:(ev.choices||[]).map(c=>c.label)}:null,triggerEvent:tr?{id:tr.id,title:tr.title,text:tr.text,choices:(tr.choices||[]).map(c=>c.label)}:null}};
   const readJson=async req=>{
     if(!req.headers['content-type']?.startsWith('application/json'))fail('需要 JSON 请求。',415);
     let raw='';for await(const part of req){raw+=part;if(Buffer.byteLength(raw)>16384)fail('请求过长。',413)}
@@ -122,7 +129,7 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
         return send(200,{users:list});
       }
 
-      if(req.method==='POST'&&['/api/turn','/api/reset','/api/chat','/api/office','/api/army','/api/rival','/api/logout'].includes(route)){
+      if(req.method==='POST'&&['/api/turn','/api/reset','/api/chat','/api/office','/api/army','/api/rival','/api/policy','/api/assignment','/api/exam','/api/logout'].includes(route)){
         if(requireAuth&&!uid)return send(401,{error:'请先登录。'});
         if(route==='/api/logout'){if(token){sessions.delete(token);await saveSessions()}return send(200,{ok:true})}
         const a=await readJson(req);
@@ -143,6 +150,9 @@ export async function createGameServer({env=process.env,dataDir=path.join(root,'
           else if(route==='/api/office'){if(validateRequest(state,a))await persist(uid,applyOffice(state,a));}
           else if(route==='/api/army'){if(validateRequest(state,a))await persist(uid,applyArmy(state,a));}
           else if(route==='/api/rival'){if(validateRequest(state,a))await persist(uid,applyRivalAction(state,a));}
+          else if(route==='/api/policy'){if(validateRequest(state,a))await persist(uid,applyPolicy(state,a));}
+          else if(route==='/api/assignment'){if(validateRequest(state,a))await persist(uid,applyAssignment(state,a));}
+          else if(route==='/api/exam'){if(validateRequest(state,a))await persist(uid,applyExam(state,a));}
           return send(200,publicState(states.get(uid),aiEnv));
         }finally{busy.delete(uid)}
       }
